@@ -1,0 +1,147 @@
+const FileUploader = (props) => {
+const productParams = useSelector((state) => state.config.botConfiguration);
+  const INITIAL_UPLOAD_STEP = -1;
+  const INITIAL_PROGRESS = 0;
+  const INITIAL_UPLOAD_CONTAINER = "gai_custom-upload-container";
+  const INITIAL_UPLOAD_CONTAINER_SMALL =
+    INITIAL_UPLOAD_CONTAINER + " " + "gai_custom-upload-container_small";
+
+  const INITIAL_UPLOAD_BUTTON = "gai_btn_upload gai_btn";
+  const INITIAL_DELETE_BUTTON = "gai_btn_cancel gai_btn";
+  const INITIAL_ITEM_TEMPLATE = "gai_uploader_fileSelection";
+  const INITIAL_UPLOADSTEPS_TEXT = {
+    document_selected: ["Documents Selected", 1],
+    upload_content: ["Upload", 0],
+    process_content: ["Process", 0],
+  };
+  const ALLOWED_FILE_TYPES = [
+    "pdf",
+    "doc",
+    "docx",
+    "xls",
+    "xlsx",
+    "ppt",
+    "pptx",
+  ];
+  const LoaderText = {
+    processingState: "",
+    completeState: "",
+    failedState: "",
+  };
+  const MAX_INPUT_SIZE = productParams.InputSizeLimit;
+
+  const ERROR_ARRAY = [1, 2, 3];
+
+  const fileUploadRef = useRef(null);
+  const progressBar = useSelector((state) => state.uploadDocuments.progressBar);
+  const [uploadStep, setUploadStep] = useState(INITIAL_UPLOAD_STEP);
+  const [showMinimizeButton, setShowMinimizeButton] = useState(false);
+  const invalidFileFomat = "has invalid File Format";
+  const invalidFileSize = "has invalid File Size";
+  let errorMessages = [];
+  let errorStatus = "multi-error";
+  const [toastConfig, setToastConfig] = useState({
+    status: "error",
+    errorItems: errorMessages,
+  });
+
+  const [toastMsg, setToastMsg] = useState(false);
+  const [showWidgets, setShowWidgets] = useState(false);
+  const [progressBarText, setProgressBarText] = useState("");
+  const [uploadContainerClass, setUploadContainerClass] = useState(
+    INITIAL_UPLOAD_CONTAINER
+  );
+  const [uploadButtonClass, setUploadButtonClass] = useState(
+    INITIAL_UPLOAD_BUTTON
+  );
+  const [deleteButtonClass, setDeleteButtonClass] = useState(
+    INITIAL_DELETE_BUTTON
+  );
+  let itemTemplateClass = "";
+
+  const [firstSelect, setFirstSelect] = useState(true);
+
+  const [uploadStepsText, setUploadStepsText] = useState(
+    INITIAL_UPLOADSTEPS_TEXT
+  );
+  const [uploadButton, setUploadButton] = useState("Upload");
+  const [validationError, setValidationError] = useState(false);
+  let fileSize = 0;
+
+  const dispatch = useDispatch();
+ const itemTemplate = (file, props) => {
+    const ext = file.name.split(".");
+
+    if (ALLOWED_FILE_TYPES.includes(ext[1])) {
+      fileSize += file.size;
+    }
+
+    if (file.size > MAX_INPUT_SIZE || file.size > 40000 || fileSize > 40000) {
+      if (!ALLOWED_FILE_TYPES.includes(ext[1])) {
+        errorMessages.push({
+          file: file.name,
+          message: file.name + " " + invalidFileFomat,
+        });
+
+        setToastConfig({
+          status: errorStatus,
+          errorItems: errorMessages,
+        });
+
+       
+      } else {
+        errorMessages.push({
+          file: file.name,
+          message: file.name + " " + invalidFileSize,
+        });
+
+        setToastConfig({
+          status: errorStatus,
+          errorItems: errorMessages,
+        });
+      }
+      
+      setToastMsg(true);
+      setValidationError(true);
+
+      handleUploadContainer("disable-small");
+      // handleUploadButton("disable");
+
+      itemTemplateClass = INITIAL_ITEM_TEMPLATE + " " + "gai_upload_FileError";
+    } else {
+      setValidationError(false);
+      itemTemplateClass = INITIAL_ITEM_TEMPLATE;
+    }
+    return (
+      // change color here
+      <div className={itemTemplateClass}>
+        <div className="gai_uploader_fileName">{file.name}</div>
+        <div className="gai_uploader_file_sizeAndButton">
+          <span className="gai_uploader_fileSize">{props.formatSize}</span>
+
+          <div
+            className="gai_uploader_fileselection_cancel"
+            onClick={() => onTemplateRemove(file, props.onRemove)}
+          >
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 12 12"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M6 0C4.81331 0 3.65328 0.351894 2.66658 1.01118C1.67989 1.67047 0.910851 2.60754 0.456726 3.7039C0.00259972 4.80026 -0.11622 6.00666 0.115291 7.17054C0.346802 8.33443 0.918247 9.40353 1.75736 10.2426C2.59648 11.0818 3.66558 11.6532 4.82946 11.8847C5.99335 12.1162 7.19975 11.9974 8.2961 11.5433C9.39246 11.0892 10.3295 10.3201 10.9888 9.33342C11.6481 8.34673 12 7.18669 12 6C11.9981 4.40927 11.3654 2.88422 10.2406 1.75941C9.11578 0.634589 7.59073 0.00185261 6 0ZM6 10.909C5.02909 10.909 4.07999 10.6211 3.27271 10.0817C2.46543 9.54228 1.83623 8.7756 1.46468 7.87859C1.09313 6.98159 0.995913 5.99455 1.18533 5.0423C1.37474 4.09005 1.84228 3.21535 2.52882 2.52881C3.21535 1.84228 4.09005 1.37474 5.0423 1.18533C5.99456 0.99591 6.98159 1.09312 7.8786 1.46468C8.7756 1.83623 9.54228 2.46543 10.0817 3.27271C10.6211 4.07999 10.909 5.02909 10.909 6C10.9074 7.30146 10.3897 8.54916 9.46944 9.46943C8.54916 10.3897 7.30146 10.9074 6 10.909Z"
+                fill=""
+              />
+              <path
+                d="M8.70028 3.30038C8.64967 3.24973 8.58958 3.20956 8.52343 3.18214C8.45728 3.15473 8.38638 3.14062 8.31478 3.14062C8.24318 3.14062 8.17228 3.15473 8.10613 3.18214C8.03999 3.20956 7.9799 3.24973 7.92928 3.30038L6.00128 5.22838L4.07228 3.30038C3.97004 3.19814 3.83137 3.1407 3.68678 3.1407C3.54219 3.1407 3.40353 3.19814 3.30128 3.30038C3.19904 3.40262 3.1416 3.54129 3.1416 3.68588C3.1416 3.83047 3.19904 3.96914 3.30128 4.07138L5.22928 6.00038L3.30128 7.92838C3.25066 7.97901 3.2105 8.0391 3.1831 8.10525C3.1557 8.17139 3.1416 8.24229 3.1416 8.31388C3.1416 8.38547 3.1557 8.45637 3.1831 8.52251C3.2105 8.58866 3.25066 8.64875 3.30128 8.69938C3.35191 8.75 3.41201 8.79016 3.47815 8.81756C3.54429 8.84496 3.61519 8.85906 3.68678 8.85906C3.75838 8.85906 3.82927 8.84496 3.89542 8.81756C3.96156 8.79016 4.02166 8.75 4.07228 8.69938L6.00028 6.77138L7.92928 8.70038C8.03152 8.80262 8.17019 8.86006 8.31478 8.86006C8.45937 8.86006 8.59804 8.80262 8.70028 8.70038C8.80252 8.59814 8.85996 8.45947 8.85996 8.31488C8.85996 8.17029 8.80252 8.03162 8.70028 7.92938L6.77228 6.00038L8.70028 4.07238C8.75108 4.02175 8.79138 3.96159 8.81888 3.89536C8.84638 3.82912 8.86053 3.7581 8.86053 3.68638C8.86053 3.61466 8.84638 3.54365 8.81888 3.47741C8.79138 3.41117 8.75108 3.35101 8.70028 3.30038Z"
+                fill=""
+              />
+            </svg>
+          </div>
+        </div>
+      </div>
+    );
+  };
+  }
