@@ -1,0 +1,1930 @@
+react-dom.development.js:14887 Uncaught Error: Objects are not valid as a React child (found: object with keys {current}). If you meant to render a collection of children, use an array instead. This error is coming.
+
+This is the whole code:
+import React, { useEffect, useState, useRef } from "react";
+import Loader from "./childcomps/loader";
+import { Tooltip } from "primereact/tooltip";
+import DOMPurify from "dompurify";
+import References from "./childcomps/References";
+import ConfirmDialogPopup from "./common/ConfirmDialog";
+import DownloadLoader from "./childcomps/DownloadLoader";
+import { useSelector, useDispatch } from "react-redux";
+import $ from "jquery";
+import {
+  fetchBotResponse,
+  setIsScrollOnChatHistoryLoad,
+  setIsScrollOnSendQuery,
+} from "../../redux/reducers/botResponseSlice";
+import BlankQuery from "./childcomps/blankQuery";
+import { getFeedback } from "../../apiservice/ChatBotAPI";
+import ToastMessages from "./childcomps/ToastMessages";
+import { Toast } from "primereact/toast";
+import handleEventTracking from "../../eventTracking";
+import {
+  setInvalidDocLocatorTypes,
+  setSelectedSource,
+  setSourcePanelVisible,
+} from "../../redux/reducers/sourcePanelSlice";
+import PropTypes from "prop-types";
+import { Button } from "primereact/button";
+import { setQueryForSearchViaWebOrPromptSelection } from "../../redux/reducers/promptSlice";
+import {
+  downloadExcel,
+  downloadWordForReferences,
+} from "./childcomps/downlaodReferences";
+import { useDeleteAllDocuments } from "./customHooks/useDeleteAllDocuments";
+import { getDefaultContentTypes } from "./common/getDefaultContentTypes";
+import Chart from "./common/chart";
+import { toPng } from "html-to-image";
+import MarkdownRenderer from "../wrapper/markdownRenderer";
+import moment from "moment";
+import svgJson from "../../assets/json/svg.json";
+import DangerouslySetHtml from "../wrapper/dangerouslySetHtml";
+import FileUploader from "./childcomps/FileUploader";
+import {
+  setFileUploader,
+  setGlobalError,
+  setProgressBar,
+  setShowUploadLoader,
+  setShowUploadPage,
+  setGlobalFileUploadSuccess,
+  setGlobalFileUploadSuccessMsg,
+  setShowGlobalMultiError,
+  setGlobalMultiToast,
+  setGlobalInfo,
+} from "../../redux/reducers/uploadDocumentSlice";
+import { setGlobalQueryType } from "../../redux/reducers/chatBoxSlice";
+import { use } from "react";
+
+// #region ChatContent
+
+const ChatContent = (props) => {
+  const [loading, setLoading] = useState(false);
+  const [downloadLoading, setDownloadLoading] = useState(false);
+  const [referencesMenu, setReferenceMenu] = useState({});
+  const [downloadAllReferencesMenu, setDownloadAllReferencesMenu] = useState({});
+  const [isReferencesVisible, setIsReferencesVisible] = useState(false);
+  const scrollRef = useRef(null);
+  const [searchReferences, setSearchReferences] = useState([]);
+  const [copyTooltipId, setCopyTooltipId] = useState("");
+  const [documentsReference] = useState([]);
+  const [toastConfig, setToastConfig] = useState({ status: "", message: "" });
+  const [showSearchViaWebPopup, setshowSearchViaWebPopup] = useState(false);
+  const [showLoader, setShowLoader] = useState(false);
+  const [sourceTypeForShowReferences, setSourceTypeForShowReferences] =
+    useState("");
+  const [citationNumber, setCitationNumber] = useState(null);
+  const [showDownloadAllReferencesOption, setShowDownloadAllReferencesOption] = useState(false);
+
+  const dispatch = useDispatch();
+
+  const commonDeleteAllDocuments = useDeleteAllDocuments(props);
+
+  const productParams = useSelector((state) => state.config.botConfiguration);
+
+  const showWelcomeMessage = useSelector(
+    (state) => state.config.showWelcomeMessage
+  );
+
+  const [tooltipText, setTooltipText] = useState("");
+
+  const botResponse = useSelector((state) => state.botResponse.response);
+
+  const blankQueryValue = useSelector((state) => state.config.blankQuery);
+
+  const actionHandler = useSelector((state) => state.config.actionHandler);
+
+  const responseToProduct = useSelector(
+    (state) => state.botResponse.responseToProduct
+  );
+
+  const isScrollOnSendQuery = useSelector(
+    (state) => state.botResponse.isScrollOnSendQuery
+  );
+
+  const isScrollOnChatHistoryLoad = useSelector(
+    (state) => state.botResponse.isScrollOnChatHistoryLoad
+  );
+
+  const selectedDocuments = useSelector(
+    (state) => state.sourcePanel.selectedDocuments
+  );
+
+  const invalidDocLocatorTypes = useSelector(
+    (state) => state.sourcePanel.invalidDocLocatorTypes
+  );
+
+  const showUploadPage = useSelector(
+    (state) => state.uploadDocuments.showUploadPage
+  );
+
+  const fileUploader = useSelector(
+    (state) => state.uploadDocuments.fileUploader
+  );
+
+  const showUploadLoader = useSelector(
+    (state) => state.uploadDocuments.showUploadLoader
+  );
+
+  const globalError = useSelector((state) => state.uploadDocuments.globalError);
+
+  const globalInfo = useSelector((state) => state.uploadDocuments.globalInfo);
+
+  const globalFileUploadSuccess = useSelector(
+    (state) => state.uploadDocuments.globalFileUploadSuccess
+  );
+
+  const globalFileUploadSuccessMsg = useSelector(
+    (state) => state.uploadDocuments.globalFileUploadSuccessMsg
+  );
+
+  const selectedSource = useSelector(
+    (state) => state.sourcePanel.selectedSource
+  );
+
+  const multiToast = useRef(null);
+
+  const showGlobalMultiError = useSelector(
+    (state) => state.uploadDocuments.showGlobalMultiError
+  );
+
+  const globalMultiToast = useSelector(
+    (state) => state.uploadDocuments.globalMultiToast
+  );
+
+  const globalQueryType = useSelector((state) => state.chatBox.globalQueryType);
+
+  useEffect(() => {
+    document.addEventListener("open-show-references-panel", (e) =>
+      openShowReferencePanel(e.detail.references, e.detail.citationNumber)
+    ); // event listner for send-new-query
+    updateHeight();
+    let observer = new MutationObserver(updateHeight);
+    setTimeout(() => {
+      observer.observe($(".gai_chat-bot-content_footer")[0], {
+        attributes: true,
+        childList: true,
+        subtree: true,
+      });
+    }, 500);
+    return () => {
+      document.removeEventListener("open-show-references-panel", (e) =>
+        openShowReferencePanel(e.detail.references, e.detail.citationNumber)
+      );
+      observer.disconnect();
+    };
+  }, [showUploadLoader, showUploadPage]);
+
+  const updateHeight = () => {
+    let footerHeight = $(".gai_chat-bot-content_footer").length
+      ? $(".gai_chat-bot-content_footer").outerHeight()
+      : 0;
+    let headerHeight =
+      $(".gai_chat-bot-content_header").length &&
+      $(".gai_chat-bot-content_header").is(":visible")
+        ? $(".gai_chat-bot-content_header").outerHeight()
+        : 0;
+    let exportwrapperHeight =
+      $(".gai_export_chat").length && $(".gai_export_chat").is(":visible")
+        ? $(".gai_export_chat").outerHeight()
+        : 0;
+    let progressBarHeight =
+      $(".gai_progressBarContainer").length &&
+      $(".gai_progressBarContainer").is(":visible")
+        ? $(".gai_progressBarContainer").outerHeight()
+        : 0;
+    let extraHeightArea =
+      headerHeight + footerHeight + exportwrapperHeight + progressBarHeight;
+    $(".gai_chat-bot-content_middle").css(
+      "height",
+      `calc(100vh - ${extraHeightArea}px)`
+    );
+    // console.log("progressBar", progressBarHeight);
+  };
+
+  const closeUserinfo = () => dispatch(setInvalidDocLocatorTypes([]));
+
+  const toggleReferencesMenu = (refArr, divId, sourceType) => {
+    setReferenceMenu({
+      id: divId,
+      value:
+        referencesMenu.value && divId === referencesMenu.id
+          ? !referencesMenu.value
+          : true,
+    });
+    // setSearchReferences(refArr);
+    // setSourceTypeForShowReferences(sourceType);
+  };
+
+  const toggleDownloadAllReferencesMenu = (divId) => {
+    setDownloadAllReferencesMenu({
+      id: divId,
+      value:
+        downloadAllReferencesMenu.value && divId === downloadAllReferencesMenu.id
+          ? !downloadAllReferencesMenu.value
+          : true,
+    });
+   }
+
+  const showReferenceOutsideBot = (searchResult, resultId) => {
+    let sendReferenceDataToProduct = [];
+    searchReferences.length > 0 &&
+      searchReferences.forEach((item) => {
+        productParams.sourceList.forEach((sourceListItems) => {
+          sourceListItems.contentTypes.forEach((contentTypesItems) => {
+            if (item.locator_type === contentTypesItems.locatorType) {
+              if (
+                contentTypesItems?.fieldsToshowInReference.filter(
+                  (item) => item.isApplicableToShow
+                ).length > 0
+              ) {
+                sendReferenceDataToProduct.push(item);
+              }
+            }
+          });
+        });
+      });
+
+    props.callBack("sendRefferencesToProduct", {
+      references: sendReferenceDataToProduct,
+      question: searchResult[0].question,
+      resultId: resultId,
+    });
+  };
+
+  const handleCopy = async (result, resultId, message, botResponseIndex) => {
+    let question = result[0].question;
+    if (message.sourceType === "STRUCTURED_DATA") {
+      const isChartAvailable = result[0].chart_Data.find(
+        (item) => item.type !== "text"
+      );
+      if (isChartAvailable) {
+        let clipboardData = `<div><div>${question}</div>`;
+        for (const [index, item] of result[0].chart_Data.entries()) {
+          if (item.type === "text") {
+            const textElement = document.getElementById(
+              "structured_text" + botResponseIndex + "_" + index
+            )?.innerHTML;
+            if (textElement) {
+              clipboardData = clipboardData + ` <div>${textElement}</div>`;
+            }
+          } else if (item.type === "Table") {
+            const textElement = document.getElementById(
+              "structured_summary" + botResponseIndex + "_" + index
+            )?.innerHTML;
+            if (textElement) {
+              clipboardData = clipboardData + ` <div>${textElement}</div>`;
+            }
+            const tableElement = document.getElementById(
+              "structured_table" + botResponseIndex + "_" + index
+            )?.outerHTML;
+            if (tableElement) {
+              clipboardData = clipboardData + " " + tableElement;
+            }
+          } else {
+            const summaryElement = document.getElementById(
+              "structured_chart_summary" + botResponseIndex + "_" + index
+            );
+            const chartElement = document.getElementById(
+              "structured_chart" + botResponseIndex + "_" + index
+            )?.firstChild;
+            if (chartElement) {
+              const tittleElement = document.getElementById(
+                "structured_tittle" + botResponseIndex + "_" + index
+              )?.innerHTML;
+              if (tittleElement) {
+                clipboardData = clipboardData + ` <div>${tittleElement}</div>`;
+              }
+              try {
+                const chartDataUrl = await toPng(chartElement); // Wait for the chart element to be converted to PNG
+                clipboardData =
+                  clipboardData + ` <img src="${chartDataUrl}" alt="Chart" />`;
+              } catch (error) {
+                console.log("Failed to convert chart to PNG:", error);
+              }
+            }
+            if (summaryElement) {
+              const textElement = summaryElement.innerHTML;
+              clipboardData = clipboardData + ` <div>${textElement}</div>`;
+            }
+          }
+        }
+
+        clipboardData = clipboardData + " </div>";
+
+        try {
+          const blob = new Blob([clipboardData], { type: "text/html" });
+          const data = [new ClipboardItem({ "text/html": blob })];
+          await navigator.clipboard.write(data);
+        } catch (error) {
+          console.log("Failed to copy:", error);
+        }
+      } else {
+        let clipboardData = "";
+        for (const [index] of result[0].chart_Data.entries()) {
+          const textElement = document.getElementById(
+            "structured_text" + botResponseIndex + "_" + index
+          )?.innerText;
+          clipboardData = clipboardData + textElement;
+        }
+        navigator.clipboard.writeText(question + "\n" + clipboardData);
+      }
+    } else {
+      let response = "";
+      result.forEach((item) => {
+        let output = item.search_output
+          ? item.search_output
+          : item.key_takeaways;
+        response = response + output + "\n";
+      });
+      navigator.clipboard.writeText(question + "\n" + response);
+    }
+
+    setCopyTooltipId(resultId);
+    setTooltipText("Copied");
+    setTimeout(() => {
+      setCopyTooltipId("");
+      setTooltipText("");
+    }, 2000);
+  };
+
+  const handleLikeDislike = (result_id, status, sourceType) => {
+    productParams.isGaiUaTrackingEnable &&
+      handleEventTracking("User Feedback Clicked", status ? "Like" : "Dislike");
+    const status_code = status === null ? 0 : status === false ? -1 : 1;
+    const likeDislikeAction = structuredClone(botResponse);
+    let prevStatus;
+    likeDislikeAction.forEach((item) => {
+      if (!item.isUser && item.searchResult?.result_id === result_id) {
+        prevStatus = item.status;
+        item.status = status;
+      }
+    });
+
+    dispatch(fetchBotResponse(likeDislikeAction));
+
+    sourceType !== "STRUCTURED_DATA" &&
+      getFeedback(result_id, status_code, productParams)
+        .then((response) => {
+          if (!response) {
+            const likeDislikeAction = structuredClone(botResponse);
+            likeDislikeAction.forEach((item) => {
+              if (!item.isUser && item.searchResult?.result_id === result_id) {
+                item.status = prevStatus;
+              }
+            });
+
+            dispatch(fetchBotResponse(likeDislikeAction));
+
+            setToastConfig({
+              status: "error",
+              message: "Sorry, something went wrong. Please try again later.",
+            });
+          }
+        })
+        .catch((err) => {
+          setToastConfig({
+            status: "error",
+            message: "Sorry, something went wrong. Please try again later.",
+          });
+        });
+  };
+
+  const toggleReferences = (divId) => {
+    setIsReferencesVisible(!isReferencesVisible);
+    setCitationNumber(null);
+  };
+
+  const handleSearchViaWeb = () => {
+    const sourceIndex = productParams.sourceList?.findIndex(
+      (item) => item.sourceType === "WEB"
+    );
+    if (sourceIndex >= 0) {
+      const contentTypes = getDefaultContentTypes(
+        productParams?.sourceList[sourceIndex].contentTypes
+      );
+      dispatch(
+        setQueryForSearchViaWebOrPromptSelection(
+          botResponse[botResponse.length - 2].text
+        )
+      );
+      selectedDocuments.length > 0 && commonDeleteAllDocuments();
+      dispatch(
+        setSelectedSource({ source: sourceIndex, contentTypes: contentTypes })
+      );
+    }
+  };
+
+  const handleSearchViaWebClick = () => {
+    if (selectedDocuments?.length > 0) {
+      setshowSearchViaWebPopup(true);
+    } else handleAccept();
+  };
+
+  const handleAccept = () => {
+    handleSearchViaWeb();
+    setshowSearchViaWebPopup(false);
+  };
+  const handleReject = () => {
+    setshowSearchViaWebPopup(false);
+  };
+
+  const handleDownloadReferencesExcel = async (
+    result,
+    message,
+    botResponseIndex
+  ) => {
+    const queryMessage = result[0].question ?? "";
+    let response = result.map((item) => {
+      if (item.search_output) {
+        return item.search_output;
+      }
+      if (item.key_takeaways) {
+        return item.key_takeaways;
+      }
+    });
+
+    if (result[0].chart_Data && result[0].chart_Data.length > 0) {
+      for (const [index, item] of result[0].chart_Data.entries()) {
+        if (item.type === "text") {
+          response.push({ type: "text", value: item.summary });
+        } else if (item.type === "Table") {
+          if (item.data?.length > 0) {
+            response.push({ type: "text", value: item.title });
+            response.push({ type: "table", value: item.data });
+          }
+          item.summary && response.push({ type: "text", value: item.summary });
+        } else {
+          const summaryElement = document.getElementById(
+            "structured_chart_summary" + botResponseIndex + "_" + index
+          );
+          const chartElement = document.getElementById(
+            "structured_chart" + botResponseIndex + "_" + index
+          )?.firstChild;
+          if (chartElement) {
+            if (item.data?.title) {
+              response.push({ type: "text", value: item.data.title });
+            }
+            try {
+              const chartDataUrl = await toPng(chartElement); // Wait for the chart element to be converted to PNG
+              response.push({
+                type: "chart",
+                value: chartDataUrl.replace("data:image/png;base64,", ""),
+              });
+            } catch (error) {
+              console.log("Failed to convert chart to PNG:", error);
+            }
+          }
+          if (summaryElement && item.summary) {
+            response.push({ type: "text", value: item.summary });
+          }
+        }
+      }
+    }
+
+    // setReferenceMenu({});
+    setDownloadAllReferencesMenu({});
+    if (productParams.downloadAllRefferencesInsideBot) {
+      setDownloadLoading(true);
+      let data = filterAllRefrenceToDownloadByLocatorType();
+      if (data && data.length > 0) {
+        async function fetchData() {
+          try {
+            let filterReferenceDataToDownloadByLocatorType =
+              await props.callBack("downloadAllReference", data);
+            if (filterReferenceDataToDownloadByLocatorType) {
+              downloadRefrencesExcel(
+                filterReferenceDataToDownloadByLocatorType,
+                queryMessage,
+                response
+              );
+            }
+          } catch (error) {
+            console.log("error", error);
+          } finally {
+            setDownloadLoading(false);
+          }
+        }
+        fetchData();
+      } else {
+        setDownloadLoading(false);
+        console.log("Error in DownloadReferences - No refrence to download");
+      }
+    } else {
+      props.callBack("downloadAllRefferencesAtProductEnd", {
+        query: queryMessage,
+        response: response,
+        refferences: searchReferences,
+      });
+    }
+  };
+
+  const handleDownloadReferencesWord = async (
+    result,
+    message,
+    botResponseIndex
+  ) => {
+    const queryMessage = result[0].question ?? "";
+    let response = result.map((item) => {
+      if (item.search_output) {
+        return item.search_output;
+      }
+      if (item.key_takeaways) {
+        return item.key_takeaways;
+      }
+    });
+
+    if (result[0].chart_Data && result[0].chart_Data.length > 0) {
+      for (const [index, item] of result[0].chart_Data.entries()) {
+        if (item.type === "text") {
+          response.push({ type: "text", value: item.summary });
+        } else if (item.type === "Table") {
+          if (item.data?.length > 0) {
+            response.push({ type: "text", value: item.title });
+            response.push({ type: "table", value: item.data });
+          }
+          item.summary && response.push({ type: "text", value: item.summary });
+        } else {
+          const summaryElement = document.getElementById(
+            "structured_chart_summary" + botResponseIndex + "_" + index
+          );
+          const chartElement = document.getElementById(
+            "structured_chart" + botResponseIndex + "_" + index
+          )?.firstChild;
+          if (chartElement) {
+            if (item.data?.title) {
+              response.push({ type: "text", value: item.data.title });
+            }
+            try {
+              const chartDataUrl = await toPng(chartElement); // Wait for the chart element to be converted to PNG
+              response.push({
+                type: "chart",
+                value: chartDataUrl.replace("data:image/png;base64,", ""),
+              });
+            } catch (error) {
+              console.log("Failed to convert chart to PNG:", error);
+            }
+          }
+          if (summaryElement && item.summary) {
+            response.push({ type: "text", value: item.summary });
+          }
+        }
+      }
+    }
+    // setReferenceMenu({});
+    setDownloadAllReferencesMenu({});
+    if (productParams.downloadAllRefferencesInsideBot) {
+      setDownloadLoading(true);
+      let data = filterAllRefrenceToDownloadByLocatorType();
+      if (data && data.length > 0) {
+        async function fetchData() {
+          try {
+            let filterReferenceDataToDownloadByLocatorType =
+              await props.callBack("downloadAllReference", data);
+            if (filterReferenceDataToDownloadByLocatorType) {
+              downloadRefrencesWord(
+                filterReferenceDataToDownloadByLocatorType,
+                queryMessage,
+                response
+              );
+            }
+          } catch (error) {
+            console.log("error", error);
+          } finally {
+            setDownloadLoading(false);
+          }
+        }
+        fetchData();
+      } else {
+        setDownloadLoading(false);
+        console.log("Error in DownloadReferences - No refrence to download");
+      }
+    } else {
+      props.callBack("downloadAllRefferencesAtProductEnd", {
+        query: queryMessage,
+        response: response,
+        refferences: searchReferences,
+      });
+    }
+  };
+
+  const downloadRefrencesExcel = (
+    filterReferenceDataToDownloadByLocatorType,
+    queryMessage,
+    response
+  ) => {
+    const locatorTypes = filterReferenceDataToDownloadByLocatorType.map(
+      (x) => x.locator_type
+    );
+    const uniquelocatorTypes = [...new Set(locatorTypes)];
+    let sheetDataTodownload = [];
+    uniquelocatorTypes.forEach((locType) => {
+      let sheetData = [];
+      filterReferenceDataToDownloadByLocatorType
+        .filter((x) => x.locator_type === locType)
+        .forEach((data) => {
+          data.fieldsToshowInReference.sort((r1, r2) =>
+            r1.sequence > r2.sequence ? 1 : r1.sequence < r2.sequence ? -1 : 0
+          );
+          const obj = data.fieldsToshowInReference.reduce((acc, obj) => {
+            let values = obj.value;
+            if (
+              !obj.isHyperlink &&
+              typeof obj.value === "string" &&
+              obj.value?.trim().length > 0
+            ) {
+              values = [`${obj.value}`];
+            } else if (
+              obj.isHyperlink &&
+              typeof obj.value === "string" &&
+              obj.value?.trim().length > 0
+            ) {
+              values = obj.value?.split(",").map((value) => value?.trim());
+            }
+            acc[obj.displayName] =
+              values &&
+              values
+                .map((value) => `${value.replaceAll("</br>", "\n")}`)
+                .join("\n");
+            return acc;
+          }, {});
+          if (data.downloadRelevancyScore) {
+            obj["RelevancyScore"] =
+              (data.relevancy_score * 100).toFixed(2) + " %";
+          }
+          sheetData.push(obj);
+        });
+      let sheetName = filterReferenceDataToDownloadByLocatorType.filter(
+        (x) => x.locator_type === locType
+      )[0].label;
+      let obj = {
+        sheetName: sheetName,
+        sheetObject: {
+          Query: queryMessage,
+          Response:
+            response.length === 1
+              ? response.map((response) => `• ${response}`).join("\n")
+              : getStructuredResponse(response),
+        },
+        sheetJson: sheetData,
+        sheetTable: [],
+      };
+      sheetDataTodownload.push(obj);
+    });
+    const fileName = "References";
+    downloadExcel(sheetDataTodownload, fileName);
+  };
+
+  const getStructuredResponse = (response) => {
+    let res = "";
+
+    response.forEach((item) => {
+      if (item.type === "text" && item.value.length > 0) {
+        res += `• ${item.value}` + "\n";
+      }
+    });
+
+    return res;
+  };
+
+  const downloadRefrencesWord = (
+    filterReferenceDataToDownloadByLocatorType,
+    queryMessage,
+    response
+  ) => {
+    const locatorTypes = filterReferenceDataToDownloadByLocatorType.map(
+      (x) => x.locator_type
+    );
+    const uniquelocatorTypes = [...new Set(locatorTypes)];
+    let sheetDataTodownload = [];
+    uniquelocatorTypes.forEach((locType) => {
+      let sheetData = [];
+      filterReferenceDataToDownloadByLocatorType
+        .filter((x) => x.locator_type === locType)
+        .forEach((data) => {
+          data.fieldsToshowInReference.sort((r1, r2) =>
+            r1.sequence > r2.sequence ? 1 : r1.sequence < r2.sequence ? -1 : 0
+          );
+          const obj = data.fieldsToshowInReference.reduce((acc, obj) => {
+            let values = obj.value;
+            if (
+              !obj.isHyperlink &&
+              typeof obj.value === "string" &&
+              obj.value?.trim().length > 0
+            ) {
+              values = [`${obj.value}`];
+            } else if (
+              obj.isHyperlink &&
+              typeof obj.value === "string" &&
+              obj.value?.trim().length > 0
+            ) {
+              values = obj.value?.split(",").map((value) => value?.trim());
+            }
+            acc[obj.displayName] =
+              values &&
+              values
+                .map((value) => `• ${value.replaceAll("</br>", "\n")}`)
+                .join("\n");
+            return acc;
+          }, {});
+          if (data.downloadRelevancyScore) {
+            obj["RelevancyScore"] =
+              (data.relevancy_score * 100).toFixed(2) + " %";
+          }
+          sheetData.push(obj);
+        });
+      let sheetName = filterReferenceDataToDownloadByLocatorType.filter(
+        (x) => x.locator_type === locType
+      )[0].label;
+      let obj = {
+        sheetName: sheetName,
+        sheetObject: {
+          Query: queryMessage,
+          Response: response,
+        },
+        sheetJson: sheetData,
+        sheetTable: [],
+      };
+      sheetDataTodownload.push(obj);
+    });
+    const fileName = "References";
+    downloadWordForReferences(sheetDataTodownload, fileName);
+  };
+
+  const filterAllRefrenceToDownloadByLocatorType = () => {
+    let filterDataToDownload = [];
+    searchReferences.length > 0 &&
+      searchReferences.forEach((item) => {
+        productParams.sourceList.forEach((sourceListItems) => {
+          sourceListItems.contentTypes.forEach((contentTypesItems) => {
+            if (item.locator_type === contentTypesItems.locatorType) {
+              let data = {
+                ...item,
+                label: contentTypesItems.label,
+                fieldsToshowInReference:
+                  contentTypesItems?.fieldsToshowInReference?.filter(
+                    (refr) => refr.isApplicableToDownload
+                  ),
+                downloadRelevancyScore:
+                  contentTypesItems?.downloadRelevancyScore,
+              };
+              data.fieldsToshowInReference.length > 0 &&
+                filterDataToDownload.push(data);
+            }
+          });
+        });
+      });
+    return filterDataToDownload;
+  };
+
+  const getWelcomeMessage = () => {
+    return (
+      <>
+        {/* <NotificationMsg /> */}
+
+        <div className="gai_welcome-message">
+          <div className="gai_bot_img"></div>
+          <p
+            className="gai_welcome-message_content"
+            dangerouslySetInnerHTML={{
+              __html: DOMPurify.sanitize(productParams?.disclaimer),
+            }}
+          ></p>
+          {productParams?.boxDisclaimer?.length > 0 ? (
+            <div className="gai_directional_insights">
+              <span className="gai_directional_icon ">
+                <svg
+                  id="ic_info"
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    id="ic_info-2"
+                    data-name="ic_info"
+                    d="M10.25.25a10,10,0,1,0,10,10A10,10,0,0,0,10.25.25Zm0,4.435A1.694,1.694,0,1,1,8.556,6.379,1.694,1.694,0,0,1,10.25,4.685Zm2.258,10.242a.484.484,0,0,1-.484.484H8.476a.484.484,0,0,1-.484-.484V13.96a.484.484,0,0,1,.484-.484H8.96V10.9H8.476a.484.484,0,0,1-.484-.484V9.444a.484.484,0,0,1,.484-.484h2.581a.484.484,0,0,1,.484.484v4.032h.484a.484.484,0,0,1,.484.484Z"
+                    transform="translate(-0.25 -0.25)"
+                    fill="#eb8046"
+                  />
+                </svg>
+              </span>
+              <p
+                className="gai_directional_insights_content"
+                dangerouslySetInnerHTML={{
+                  __html: DOMPurify.sanitize(
+                    productParams?.boxDisclaimer?.length > 0
+                      ? productParams.boxDisclaimer
+                      : ""
+                  ),
+                }}
+              ></p>
+            </div>
+          ) : (
+            ""
+          )}
+        </div>
+      </>
+    );
+  };
+
+  const getIsShowReferencesForSourceTypeAvailable = (sourceType) => {
+    return productParams.sourceList.find(
+      (item) => item.sourceType?.toUpperCase() === sourceType?.toUpperCase()
+    )?.isVisibleShowReferences;
+  };
+
+  const getIsDownloadReferencesForSourceTypeAvailable = (sourceType) => {
+    return productParams.sourceList.find(
+      (item) => item.sourceType?.toUpperCase() === sourceType?.toUpperCase()
+    )?.isVisibleDownloadAllReferences;
+  };
+
+  const referenceMenuRef = useRef(null);
+  const downloadAllReferencesMenuRef = useRef(null);
+
+  const handleReferences = (id) => {
+    referenceMenuRef.current = document.getElementById(id);
+  };
+  const handleClickOutsideReferenceMenu = (event) => {
+    if (
+      referencesMenu.value &&
+      referenceMenuRef.current &&
+      !referenceMenuRef.current.contains(event.target)
+    ) {
+      setReferenceMenu(!referencesMenu.value);
+    }
+  };
+
+  const handleClickOutsideDownloadAllReferencesMenu = (event) => {
+    if (
+      downloadAllReferencesMenu.value &&
+      downloadAllReferencesMenuRef.current &&
+      !downloadAllReferencesMenuRef.current.contains(event.target)
+    ) {
+      setDownloadAllReferencesMenu(!downloadAllReferencesMenu.value);
+    }
+  };
+
+  useEffect(() => {
+    document.addEventListener("mousedown", handleClickOutsideReferenceMenu);
+    return () => {
+      document.removeEventListener(
+        "mousedown",
+        handleClickOutsideReferenceMenu
+      );
+    };
+  }, [referencesMenu.value]);
+
+  useEffect(() => {
+    document.addEventListener("mousedown", handleClickOutsideDownloadAllReferencesMenu);
+    return () => {
+      document.removeEventListener(
+        "mousedown",
+        handleClickOutsideDownloadAllReferencesMenu
+      );
+    };
+  }, [downloadAllReferencesMenu.value]);
+
+  const handleShowDownloadAllReferencesMenu = (id) => {
+    downloadAllReferencesMenuRef.current = document.getElementById(id);
+  };
+
+  const getMessageActions = (resultId, searchResult, message, index) => {
+    let refArr = [];
+    let output = "";
+    let actionButtonForSelectedSource = productParams.sourceList?.find(
+      (sourceItem) => sourceItem.sourceType === message.sourceType
+    );
+
+    if (
+      (index !== botResponse.length - 1 ||
+        (!loading && index === botResponse.length - 1)) &&
+      message.searchResult.status_code === 200 &&
+      output !== productParams.errorMessage
+    ) {
+      searchResult.forEach((result) => {
+        output = result.search_output || result.key_takeaways;
+        result.search_references?.length > 0 &&
+          result.search_references.forEach((ref) => {
+            refArr.push(ref);
+          });
+        result.key_takeaways_references?.length > 0 &&
+          result.key_takeaways_references.forEach((ref) => {
+            refArr.push(ref);
+          });
+      });
+      const isVisibleShowReferences = getIsShowReferencesForSourceTypeAvailable(
+        message.sourceType
+      );
+      const isVisibleDownloadAllReferences =
+        getIsDownloadReferencesForSourceTypeAvailable(message.sourceType);
+      return (
+        <div className="gai_chatbot_CTA_items_wrappers">
+          <div className="gai_response_source_wrapper">
+            <span className="gai_response_source_name">
+              Source: {message.querySource}
+            </span>
+          </div>
+          {((refArr.length > 0 && message.sourceType === "DOMAIN") ||
+            (refArr.length === 0 && message.sourceType === "WEB") ||
+            (refArr.length >= 0 && message.sourceType === "STRUCTURED_DATA") ||
+            (refArr.length > 0 && message.sourceType === "USERDATA")) && (
+            <div className="gai_chatbot_icon_grp">
+              <div className="gai_chatbot_user_response_icons">
+                {message?.isCurrentChat && (
+                  <>
+                    {actionButtonForSelectedSource.like.isVisible && (
+                      <span
+                        onClick={() =>
+                          handleLikeDislike(
+                            resultId,
+                            message.status === true ? null : true,
+                            message.sourceType
+                          )
+                        }
+                        className={`gai_chatbot_like_icon gai-Tooltip_${resultId} ${
+                          message.status !== null && message.status
+                            ? "selected"
+                            : ""
+                        }`}
+                      >
+                        <Tooltip
+                          key={resultId}
+                          className="gai_p-tooltip-text"
+                          target={`.gai_chatbot_like_icon.gai-Tooltip_${resultId}`}
+                          position="top"
+                        >
+                          {actionButtonForSelectedSource.like.toolTip}
+                        </Tooltip>
+                        <DangerouslySetHtml
+                          svgJson={svgJson.chatContent.gai_like_icon}
+                        ></DangerouslySetHtml>
+                      </span>
+                    )}
+                    {actionButtonForSelectedSource.dislike.isVisible && (
+                      <span
+                        onClick={() =>
+                          handleLikeDislike(
+                            resultId,
+                            message.status === false ? null : false,
+                            message.sourceType
+                          )
+                        }
+                        className={`gai_chatbot_dislike_icon  gai-Tooltip_${resultId} ${
+                          message.status !== null && !message.status
+                            ? "selected"
+                            : ""
+                        }`}
+                      >
+                        <Tooltip
+                          key={resultId}
+                          className="gai_p-tooltip-text"
+                          target={`.gai_chatbot_dislike_icon.gai-Tooltip_${resultId}`}
+                          position="top"
+                        >
+                          {actionButtonForSelectedSource.dislike.toolTip}
+                        </Tooltip>
+
+                        <DangerouslySetHtml
+                          svgJson={svgJson.chatContent.gai_dislike_icon}
+                        ></DangerouslySetHtml>
+                      </span>
+                    )}
+                  </>
+                )}
+                {actionButtonForSelectedSource.copyToClipboard.isVisible && (
+                  <span
+                    onClick={() =>
+                      handleCopy(searchResult, resultId, message, index)
+                    }
+                    className={`gai_chatbot_copy_icon gai-Tooltip_${resultId}`}
+                  >
+                    <Tooltip
+                      key={resultId}
+                      className="gai_p-tooltip-text"
+                      target={`.gai_chatbot_copy_icon.gai-Tooltip_${resultId}`}
+                      position="top"
+                    >
+                      {tooltipText.trim().length > 0
+                        ? tooltipText
+                        : actionButtonForSelectedSource.copyToClipboard.toolTip}
+                    </Tooltip>
+                    {copyTooltipId === resultId ? (
+                      <DangerouslySetHtml
+                        svgJson={svgJson.chatContent.gai_copy_icon}
+                      ></DangerouslySetHtml>
+                    ) : (
+                      <DangerouslySetHtml
+                        svgJson={svgJson.chatContent.gai_copy_color}
+                      ></DangerouslySetHtml>
+                    )}
+                  </span>
+                )}
+
+                {('readAloud' in productParams.actionButtons) &&
+                (<span className={`gai_audio`}>
+                  <Tooltip
+                    className="gai_p-tooltip-text"
+                    target={`.gai_audio`}
+                    position="top"
+                  >
+                    Audio
+                  </Tooltip>
+
+                  <DangerouslySetHtml
+                    svgJson={svgJson.chatContent.gai_audio_icon}
+                  ></DangerouslySetHtml>
+                </span>)}
+
+                {(isVisibleShowReferences) && refArr.length > 0 &&
+                ( 
+                <div 
+                  onClick={() => {
+                    //setReferenceMenu({});
+                    setSearchReferences(refArr);
+                    setSourceTypeForShowReferences(message.sourceType);
+                    dispatch(setSourcePanelVisible(false));
+                    productParams.showRefferencesInsideBot ||
+                    message.sourceType === "STRUCTURED_DATA"
+                      ? toggleReferences("div_" + resultId)
+                      : showReferenceOutsideBot(
+                          searchResult,
+                          resultId
+                        );
+                  }}>
+                <span className={`gai_showreferences`}>
+                  <Tooltip
+                    className="gai_p-tooltip-text"
+                    target={`.gai_showreferences`}
+                    position="top"
+                  >
+                    {productParams.actionButtons.showReferences.toolTip}
+                  </Tooltip>
+
+                  <DangerouslySetHtml
+                    svgJson={svgJson.chatContent.gai_showreferences_icon}
+                  ></DangerouslySetHtml>
+                </span>
+                </div>
+                )}
+
+              </div>
+
+              {(isVisibleDownloadAllReferences) &&
+              refArr.length > 0 &&
+              (<div 
+                className="gai_chatbot_answer_byline_reference">
+                id={resultId}
+                ref={downloadAllReferencesMenuRef}
+                <span
+                  className={`gai_downloadreferences gai_chatbot_reference_icon`}
+                  onClick={() => {
+                    console.log(message);
+                    toggleDownloadAllReferencesMenu(
+                      "div_" + resultId,
+                    );
+                    handleShowDownloadAllReferencesMenu(resultId)
+                  }}
+                >
+                  <Tooltip
+                    className="gai_p-tooltip-text"
+                    target={`.gai_downloadreferences`}
+                    position="top"
+                  >
+                    {productParams.actionButtons.downloadAllReferences.toolTip}
+                  </Tooltip>
+
+                  <DangerouslySetHtml
+                    svgJson={svgJson.chatContent.gai_downloadreferences_icon}
+                  ></DangerouslySetHtml>
+                </span>
+
+                {downloadAllReferencesMenu.id === "div_" + resultId &&
+                    downloadAllReferencesMenu.value && 
+                    downloadAllReferencesMenu.value &&  
+                    (<ul className="gai_chatbot_reference_drop gai_reference_postion_top">
+                  <li
+                    onClick={() => {
+                      handleDownloadReferencesExcel(
+                        searchResult,
+                        message,
+                        index
+                      );
+                      // setShowDownloadAllReferencesOption(false);
+                    }}>
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 16 16"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <g clipPath="url(#clip0_7931_7019)">
+                        <path
+                          d="M15.4519 4.32991L11.3757 0.0943125C11.3176 0.0340625 11.2376 0 11.1539 0H5.07863C4.39872 0 3.84556 0.552938 3.84556 1.23256V5.53847H1.38347C0.874781 5.53847 0.460938 5.95219 0.460938 6.46075V11.0778C0.460938 11.5863 0.874781 12 1.38347 12H3.84556V14.7696C3.84556 15.448 4.39872 16 5.07863 16H14.3048C14.9847 16 15.5379 15.4483 15.5379 14.7703V4.54328C15.5379 4.46372 15.507 4.38725 15.4519 4.32991ZM11.2302 0.830656L14.5764 4.30769H11.2302V0.830656ZM1.38347 11.3846C1.21409 11.3846 1.07634 11.247 1.07634 11.0778V6.46075C1.07634 6.29153 1.21412 6.15384 1.38347 6.15384H9.69225C9.86159 6.15384 9.99941 6.29153 9.99941 6.46075V11.0778C9.99941 11.247 9.86159 11.3846 9.69225 11.3846H1.38347ZM14.9225 14.7703C14.9225 15.109 14.6454 15.3846 14.3048 15.3846H5.07863C4.73803 15.3846 4.46094 15.1087 4.46094 14.7696V12H9.69222C10.2009 12 10.6148 11.5863 10.6148 11.0778V6.46075C10.6148 5.95219 10.2009 5.53847 9.69222 5.53847H4.46094V1.23256C4.46094 0.892219 4.73803 0.615375 5.07863 0.615375H10.6148V4.61538C10.6148 4.78531 10.7526 4.92306 10.9225 4.92306H14.9225V14.7703Z"
+                          fill="#747474"
+                        />
+                        <path
+                          d="M8.89512 8.96216C8.82481 8.84853 8.72744 8.759 8.60306 8.69347C8.47866 8.628 8.28669 8.56462 8.02706 8.50331C7.76744 8.442 7.604 8.38309 7.53669 8.32662C7.48375 8.28216 7.45731 8.22859 7.45731 8.16616C7.45731 8.09762 7.48553 8.04291 7.54209 8.00206C7.62984 7.93838 7.75125 7.90653 7.90625 7.90653C8.05647 7.90653 8.16919 7.93631 8.24431 7.99575C8.31941 8.05522 8.36837 8.15291 8.39122 8.28875L8.92484 8.26528C8.91647 8.0225 8.82847 7.82838 8.66078 7.683C8.49306 7.53753 8.24341 7.46484 7.91172 7.46484C7.70856 7.46484 7.53519 7.49544 7.39156 7.55678C7.24794 7.61809 7.13794 7.70731 7.06163 7.82447C6.98531 7.94169 6.94709 8.06763 6.94709 8.20225C6.94709 8.41131 7.02825 8.58862 7.19056 8.73409C7.30594 8.83741 7.50662 8.92456 7.79272 8.99547C8.01503 9.05078 8.1575 9.08925 8.21994 9.11084C8.31134 9.14331 8.37531 9.18147 8.41194 9.22531C8.44863 9.26925 8.46694 9.32237 8.46694 9.38494C8.46694 9.48225 8.42337 9.56731 8.33625 9.64C8.24909 9.71269 8.11962 9.74906 7.94772 9.74906C7.78547 9.74906 7.65656 9.70822 7.56103 9.62644C7.4655 9.54475 7.40212 9.41675 7.37081 9.24244L6.85156 9.29291C6.88641 9.58859 6.99341 9.81369 7.1725 9.96813C7.35159 10.1225 7.60819 10.1997 7.94234 10.1997C8.17188 10.1997 8.36366 10.1676 8.5175 10.1033C8.67134 10.0391 8.79025 9.94075 8.87441 9.8085C8.95856 9.67634 9.00066 9.5345 9.00066 9.38303C9.00059 9.216 8.96544 9.07569 8.89512 8.96216Z"
+                          fill="#747474"
+                        />
+                        <path
+                          d="M5.27981 9.70927V7.5332H4.74609V10.1546H6.60675V9.70927H5.27981Z"
+                          fill="#747474"
+                        />
+                        <path
+                          d="M3.55406 8.79534L4.37622 7.51172H3.75784L3.23863 8.36087L2.70853 7.51172H2.08478L2.90322 8.7755L2 10.1547H2.64L3.22778 9.24062L3.81369 10.1547H4.45731L3.55406 8.79534Z"
+                          fill="#747474"
+                        />
+                      </g>
+                      <defs>
+                        <clipPath id="clip0_7931_7019">
+                          <rect width="16" height="16" fill="white" />
+                        </clipPath>
+                      </defs>
+                    </svg>
+                    Export references as .xls
+                  </li>
+                  <li
+                    onClick={() => {
+                      handleDownloadReferencesWord(
+                        searchResult,
+                        message,
+                        index
+                      );
+                      // setShowDownloadAllReferencesOption(false);
+                    }}>
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 16 16"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <g clipPath="url(#clip0_7931_7005)">
+                        <path
+                          d="M2.66719 16.0003H13.3339C13.546 16.0003 13.7495 15.916 13.8995 15.766C14.0496 15.616 14.1339 15.4125 14.1339 15.2003V3.73366C14.1381 3.52979 14.1002 3.32723 14.0225 3.13872C13.9447 2.9502 13.8289 2.77979 13.6821 2.63819L11.4955 0.451525C11.3539 0.30495 11.1835 0.189211 10.9951 0.111568C10.8067 0.0339247 10.6043 -0.00394798 10.4005 0.000325264H2.66719C2.45501 0.000325264 2.25153 0.0846107 2.1015 0.23464C1.95147 0.384669 1.86719 0.588152 1.86719 0.800325V15.2003C1.86719 15.4125 1.95147 15.616 2.1015 15.766C2.25153 15.916 2.45501 16.0003 2.66719 16.0003ZM13.3339 15.467H2.66719C2.59646 15.467 2.52864 15.4389 2.47863 15.3889C2.42862 15.3389 2.40052 15.2711 2.40052 15.2003V11.7337H13.6005V15.2003C13.6005 15.2711 13.5724 15.3389 13.5224 15.3889C13.4724 15.4389 13.4046 15.467 13.3339 15.467ZM13.2235 2.93366H11.7339C11.5924 2.93366 11.4567 2.87747 11.3567 2.77745C11.2567 2.67743 11.2005 2.54177 11.2005 2.40033V0.910725L13.2235 2.93366ZM2.66719 0.533659H10.4005C10.4712 0.533659 10.5391 0.561754 10.5891 0.611763C10.6391 0.661773 10.6672 0.729601 10.6672 0.800325V2.40033C10.6672 2.68322 10.7796 2.95453 10.9796 3.15457C11.1796 3.35461 11.451 3.46699 11.7339 3.46699H13.3339C13.4046 3.46699 13.4724 3.49509 13.5224 3.5451C13.5724 3.59511 13.6005 3.66293 13.6005 3.73366V11.2003H2.40052V0.800325C2.40052 0.729601 2.42862 0.661773 2.47863 0.611763C2.52864 0.561754 2.59646 0.533659 2.66719 0.533659Z"
+                          fill="#747474"
+                        />
+                        <path
+                          d="M8.13255 12.2676C7.88502 12.2676 7.64762 12.3659 7.47259 12.5409C7.29755 12.716 7.19922 12.9534 7.19922 13.2009V14.0009C7.19922 14.2484 7.29755 14.4858 7.47259 14.6609C7.64762 14.8359 7.88502 14.9342 8.13255 14.9342C8.38009 14.9342 8.61748 14.8359 8.79252 14.6609C8.96755 14.4858 9.06589 14.2484 9.06589 14.0009V13.2009C9.06589 12.9534 8.96755 12.716 8.79252 12.5409C8.61748 12.3659 8.38009 12.2676 8.13255 12.2676ZM8.53255 14.0009C8.53255 14.107 8.49041 14.2087 8.41539 14.2838C8.34038 14.3588 8.23864 14.4009 8.13255 14.4009C8.02647 14.4009 7.92472 14.3588 7.84971 14.2838C7.7747 14.2087 7.73255 14.107 7.73255 14.0009V13.2009C7.73255 13.0948 7.7747 12.9931 7.84971 12.9181C7.92472 12.8431 8.02647 12.8009 8.13255 12.8009C8.23864 12.8009 8.34038 12.8431 8.41539 12.9181C8.49041 12.9931 8.53255 13.0948 8.53255 13.2009V14.0009Z"
+                          fill="#747474"
+                        />
+                        <path
+                          d="M10.5329 12.7993C10.6252 12.7993 10.7145 12.8311 10.786 12.8894C10.8574 12.9477 10.9065 13.0289 10.9249 13.1193C10.9391 13.1886 10.9802 13.2495 11.0392 13.2885C11.0983 13.3276 11.1704 13.3416 11.2397 13.3274C11.3091 13.3133 11.37 13.2721 11.409 13.2131C11.448 13.1541 11.462 13.082 11.4479 13.0126C11.4021 12.7855 11.2735 12.5835 11.087 12.446C10.9006 12.3084 10.6697 12.2451 10.4392 12.2684C10.2086 12.2917 9.99502 12.3999 9.83985 12.5719C9.68468 12.744 9.59905 12.9676 9.59961 13.1993V13.9993C9.59905 14.231 9.68468 14.4546 9.83985 14.6266C9.99502 14.7987 10.2086 14.9069 10.4392 14.9302C10.6697 14.9534 10.9006 14.8901 11.087 14.7526C11.2735 14.615 11.4021 14.4131 11.4479 14.1859C11.462 14.1166 11.448 14.0445 11.409 13.9854C11.37 13.9264 11.3091 13.8853 11.2397 13.8711C11.1704 13.857 11.0983 13.871 11.0392 13.91C10.9802 13.949 10.9391 14.0099 10.9249 14.0793C10.9052 14.1765 10.85 14.2629 10.7702 14.3217C10.6903 14.3806 10.5914 14.4076 10.4927 14.3977C10.3941 14.3877 10.3026 14.3414 10.2361 14.2678C10.1696 14.1942 10.1328 14.0985 10.1329 13.9993V13.1993C10.1329 13.0932 10.1751 12.9914 10.2501 12.9164C10.3251 12.8414 10.4269 12.7993 10.5329 12.7993Z"
+                          fill="#747474"
+                        />
+                        <path
+                          d="M5.86745 12.2676H5.06745C4.99672 12.2676 4.9289 12.2957 4.87889 12.3457C4.82888 12.3957 4.80078 12.4635 4.80078 12.5342V14.6676C4.80078 14.7383 4.82888 14.8061 4.87889 14.8561C4.9289 14.9061 4.99672 14.9342 5.06745 14.9342H5.86745C6.07962 14.9342 6.2831 14.85 6.43313 14.6999C6.58316 14.5499 6.66745 14.3464 6.66745 14.1342V13.0676C6.66745 12.8554 6.58316 12.6519 6.43313 12.5019C6.2831 12.3519 6.07962 12.2676 5.86745 12.2676ZM6.13411 14.1342C6.13411 14.205 6.10602 14.2728 6.05601 14.3228C6.006 14.3728 5.93817 14.4009 5.86745 14.4009H5.33411V12.8009H5.86745C5.93817 12.8009 6.006 12.829 6.05601 12.879C6.10602 12.929 6.13411 12.9969 6.13411 13.0676V14.1342Z"
+                          fill="#747474"
+                        />
+                        <path
+                          d="M3.73346 5.06654H12.2668C12.3375 5.06654 12.4053 5.03844 12.4554 4.98843C12.5054 4.93842 12.5335 4.87059 12.5335 4.79987C12.5335 4.72915 12.5054 4.66132 12.4554 4.61131C12.4053 4.5613 12.3375 4.5332 12.2668 4.5332H3.73346C3.66274 4.5332 3.59491 4.5613 3.5449 4.61131C3.49489 4.66132 3.4668 4.72915 3.4668 4.79987C3.4668 4.87059 3.49489 4.93842 3.5449 4.98843C3.59491 5.03844 3.66274 5.06654 3.73346 5.06654Z"
+                          fill="#747474"
+                        />
+                        <path
+                          d="M12.2671 6.13281H6.66706C6.59633 6.13281 6.5285 6.16091 6.4785 6.21092C6.42849 6.26093 6.40039 6.32875 6.40039 6.39948C6.40039 6.4702 6.42849 6.53803 6.4785 6.58804C6.5285 6.63805 6.59633 6.66615 6.66706 6.66615H12.2671C12.3378 6.66615 12.4056 6.63805 12.4556 6.58804C12.5056 6.53803 12.5337 6.4702 12.5337 6.39948C12.5337 6.32875 12.5056 6.26093 12.4556 6.21092C12.4056 6.16091 12.3378 6.13281 12.2671 6.13281Z"
+                          fill="#747474"
+                        />
+                        <path
+                          d="M3.73346 6.66615H5.60013C5.67085 6.66615 5.73868 6.63805 5.78869 6.58804C5.8387 6.53803 5.8668 6.4702 5.8668 6.39948C5.8668 6.32875 5.8387 6.26093 5.78869 6.21092C5.73868 6.16091 5.67085 6.13281 5.60013 6.13281H3.73346C3.66274 6.13281 3.59491 6.16091 3.5449 6.21092C3.49489 6.26093 3.4668 6.32875 3.4668 6.39948C3.4668 6.4702 3.49489 6.53803 3.5449 6.58804C3.59491 6.63805 3.66274 6.66615 3.73346 6.66615Z"
+                          fill="#747474"
+                        />
+                        <path
+                          d="M3.73346 8.26576H12.2668C12.3375 8.26576 12.4053 8.23766 12.4554 8.18765C12.5054 8.13764 12.5335 8.06981 12.5335 7.99909C12.5335 7.92836 12.5054 7.86054 12.4554 7.81053C12.4053 7.76052 12.3375 7.73242 12.2668 7.73242H3.73346C3.66274 7.73242 3.59491 7.76052 3.5449 7.81053C3.49489 7.86054 3.4668 7.92836 3.4668 7.99909C3.4668 8.06981 3.49489 8.13764 3.5449 8.18765C3.59491 8.23766 3.66274 8.26576 3.73346 8.26576Z"
+                          fill="#747474"
+                        />
+                        <path
+                          d="M3.73346 9.86732H8.80013C8.87085 9.86732 8.93868 9.83922 8.98869 9.78921C9.0387 9.7392 9.0668 9.67138 9.0668 9.60065C9.0668 9.52993 9.0387 9.4621 8.98869 9.41209C8.93868 9.36208 8.87085 9.33398 8.80013 9.33398H3.73346C3.66274 9.33398 3.59491 9.36208 3.5449 9.41209C3.49489 9.4621 3.4668 9.52993 3.4668 9.60065C3.4668 9.67138 3.49489 9.7392 3.5449 9.78921C3.59491 9.83922 3.66274 9.86732 3.73346 9.86732Z"
+                          fill="#747474"
+                        />
+                      </g>
+                      <defs>
+                        <clipPath id="clip0_7931_7005">
+                          <rect width="16" height="16" fill="white" />
+                        </clipPath>
+                      </defs>
+                    </svg>
+                    Export references as .doc
+                  </li>
+                </ul>)}
+              </div>
+              )}
+
+              {('shareChat' in productParams.actionButtons || 'bookmarkChat' in productParams.actionButtons) &&
+               (
+                <div
+                  className="gai_chatbot_answer_byline_reference"
+                  id={resultId}
+                  ref={referenceMenuRef}
+                >
+                  <span
+                    className="gai_chatbot_reference_icon"
+                    onClick={() => {
+                      toggleReferencesMenu(
+                        refArr,
+                        "div_" + resultId,
+                        message.sourceType
+                      );
+                      handleReferences(resultId);
+                    }}
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="11"
+                      height="3"
+                      viewBox="0 0 11 3"
+                    >
+                      <g
+                        id="Group_3725"
+                        data-name="Group 3725"
+                        transform="translate(-3)"
+                      >
+                        <g
+                          id="Ellipse_66"
+                          data-name="Ellipse 66"
+                          transform="translate(3)"
+                          strokeWidth="1"
+                        >
+                          <circle
+                            cx="1.5"
+                            cy="1.5"
+                            r="1.5"
+                            stroke="none"
+                          ></circle>
+                          <circle cx="1.5" cy="1.5" r="1" fill="none"></circle>
+                        </g>
+                        <g
+                          id="Ellipse_67"
+                          data-name="Ellipse 67"
+                          transform="translate(7)"
+                          strokeWidth="1"
+                        >
+                          <circle
+                            cx="1.5"
+                            cy="1.5"
+                            r="1.5"
+                            stroke="none"
+                          ></circle>
+                          <circle cx="1.5" cy="1.5" r="1" fill="none"></circle>
+                        </g>
+                        <g
+                          id="Ellipse_68"
+                          data-name="Ellipse 68"
+                          transform="translate(11)"
+                          strokeWidth="1"
+                        >
+                          <circle
+                            cx="1.5"
+                            cy="1.5"
+                            r="1.5"
+                            stroke="none"
+                          ></circle>
+                          <circle cx="1.5" cy="1.5" r="1" fill="none"></circle>
+                        </g>
+                      </g>
+                    </svg>
+                  </span>
+                  {referencesMenu.id === "div_" + resultId &&
+                    referencesMenu.value && (
+                      <ul
+                        className={`gai_chatbot_reference_drop ${
+                          index === botResponse.length - 1
+                            ? "gai_reference_postion_top"
+                            : ""
+                        }`}
+                      >
+                        {'shareChat' in productParams.actionButtons && (
+                          <li
+                            id="1685718010489gai_chatbot_refrence_download"
+                            className="gai_1685718010489gai_chatbot_refrence_download_dev"
+                            onClick={() =>{
+                              setReferenceMenu({});
+                              console.log("Share Chat")
+                            }}
+                            key="1"
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="16.167"
+                              height="14.423"
+                              viewBox="0 0 16.167 14.423"
+                            >
+                              <path
+                                id="Download_icon"
+                                data-name="Download icon"
+                                d="M1246.285,1241.613l-3.037-3.008a.984.984,0,0,1,0-1.4,1.008,1.008,0,0,1,1.417,0l1.258,1.246c.046-1.023,0-5.52,0-5.52s.171-.8.859-.8-.181-.024.413-.024.852.8.852.8-.116,2.057-.116,5.644l1.32-1.343a1.008,1.008,0,0,1,1.417,0,.984.984,0,0,1,0,1.4l-2.966,3a1.008,1.008,0,0,1-1.417,0Zm-5.1,1.917a1,1,0,0,0,1,1h10a1,1,0,0,0,1-1v-3h2v4a2,2,0,0,1-2,2h-12a2,2,0,0,1-2-2l-.167-4h2Z"
+                                transform="translate(-1239.021 -1232.107)"
+                                fill=""
+                              ></path>
+                            </svg>{" "}
+                            {
+                              productParams.actionButtons.shareChat
+                                .label
+                            }
+                          </li>
+                        )}
+                        {'bookmarkChat' in productParams.actionButtons && (
+                          <li
+                            id="1685718010489gai_chatbot_refrence_download"
+                            className="gai_1685718010489gai_chatbot_refrence_download_dev"
+                            onClick={() =>{
+                              setReferenceMenu({});
+                              console.log("BookMark Chat")
+                            }}
+                            key="2"
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="16.167"
+                              height="14.423"
+                              viewBox="0 0 16.167 14.423"
+                            >
+                              <path
+                                id="Download_icon"
+                                data-name="Download icon"
+                                d="M1246.285,1241.613l-3.037-3.008a.984.984,0,0,1,0-1.4,1.008,1.008,0,0,1,1.417,0l1.258,1.246c.046-1.023,0-5.52,0-5.52s.171-.8.859-.8-.181-.024.413-.024.852.8.852.8-.116,2.057-.116,5.644l1.32-1.343a1.008,1.008,0,0,1,1.417,0,.984.984,0,0,1,0,1.4l-2.966,3a1.008,1.008,0,0,1-1.417,0Zm-5.1,1.917a1,1,0,0,0,1,1h10a1,1,0,0,0,1-1v-3h2v4a2,2,0,0,1-2,2h-12a2,2,0,0,1-2-2l-.167-4h2Z"
+                                transform="translate(-1239.021 -1232.107)"
+                                fill=""
+                              ></path>
+                            </svg>{" "}
+                            {
+                              productParams.actionButtons.bookmarkChat
+                                .label
+                            }
+                          </li>
+                        )}
+                      </ul>
+                    )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      );
+    } else {
+      return "";
+    }
+  };
+
+  const handleCloseDownloadLoaderClose = () => {
+    setDownloadLoading(false);
+  };
+
+  useEffect(() => {
+    if (botResponse.length > 0 && isScrollOnSendQuery) {
+      scrollRef.current?.scrollTo(0, scrollRef.current?.scrollHeight);
+      dispatch(setIsScrollOnSendQuery(false));
+    }
+  }, [loading]);
+
+  useEffect(() => {
+    if (botResponse.length > 0 && isScrollOnChatHistoryLoad) {
+      scrollRef.current?.scrollTo(0, scrollRef.current?.scrollHeight);
+      dispatch(setIsScrollOnChatHistoryLoad(false));
+    }
+  }, [isScrollOnChatHistoryLoad]);
+
+  useEffect(() => {
+    setLoading(props.loadingState);
+  }, [props.loadingState]);
+
+  useEffect(() => {
+    setShowLoader(props.showLoaderState);
+  }, [props.showLoaderState]);
+
+  useEffect(() => {
+    scrollRef.current?.scrollTo(0, scrollRef.current?.scrollHeight);
+  }, [showUploadLoader, showUploadPage]);
+
+  const handleReadButton = (status, result_id) => {
+    const readMoreMessage = structuredClone(botResponse);
+    readMoreMessage.forEach((item) => {
+      if (!item.isUser && item.searchResult?.result_id === result_id) {
+        item.isReadMoreClicked = !status;
+      }
+    });
+    dispatch(fetchBotResponse(readMoreMessage));
+  };
+
+  const getLimitedWordsFromMessage = (text) => {
+    let output = "";
+    let textArr = [];
+    textArr = text.split(" ");
+    for (let i = 0; i < productParams.wordCountReadMoreLimit; i++) {
+      output = output + textArr[i] + " ";
+    }
+    return output;
+  };
+
+  const getSuggestedPromptsList = (message) => {
+    let prompts = [];
+    message?.searchResult?.search_result &&
+      message?.searchResult?.search_result?.forEach((item) => {
+        if (item?.suggested_prompts && item?.suggested_prompts?.length > 0) {
+          item.suggested_prompts?.forEach((items) => {
+            if (items?.trim()?.length > 0) {
+              prompts.push(items);
+            }
+          });
+        }
+      });
+    return (
+      <div className="gai_prompts_wrapper">
+        {prompts
+          ?.slice(0, productParams.numberOfPromptsToShow)
+          .map((prompt, index) => (
+            <div
+              key={index}
+              onClick={(e) => handlePromptSelection(prompt)}
+              className="gai_prompts"
+            >
+              {prompt}
+            </div>
+          ))}
+      </div>
+    );
+  };
+
+  const handlePromptSelection = (selectedPrompt) => {
+    dispatch(setQueryForSearchViaWebOrPromptSelection(selectedPrompt));
+  };
+
+  const getIsStreamingApplicable = (queryType) => {
+    return queryType === "q&a"
+      ? productParams.isStreamingApplicableOnQnA
+      : productParams.isStreamingApplicableOnKeyTakeAway;
+  };
+
+  const getSearchViaWebVisible = (output, sourceType) => {
+    let searchViaWebVisible = false;
+    if (sourceType !== "WEB" && sourceType !== "STRUCTURED_DATA") {
+      let outputText = "";
+      output.search_result.forEach((result) => {
+        if (result.search_output) {
+          outputText = outputText + result.search_output;
+        }
+        if (result.key_takeaways) {
+          outputText = outputText + result.key_takeaways;
+        }
+      });
+      searchViaWebVisible = productParams.responsesToShowSearchViaWeb?.some(
+        (response) =>
+          outputText.toLowerCase().startsWith(response.toLowerCase())
+      )
+        ? true
+        : false;
+    }
+    return searchViaWebVisible;
+  };
+
+  const openShowReferencePanel = (references, citationNumber) => {
+    setReferenceMenu({});
+    setIsReferencesVisible(true);
+    setCitationNumber(citationNumber);
+    setSearchReferences(references);
+    dispatch(setSourcePanelVisible(false));
+  };
+
+  const getChatContent = () => {
+    return (
+      <>
+        {showWelcomeMessage &&
+          botResponse?.length === 0 &&
+          !blankQueryValue &&
+          getWelcomeMessage()}
+
+        {blankQueryValue && botResponse?.length === 0 && <BlankQuery />}
+
+        <div className="gai_chat-bot_message-list" ref={scrollRef}>
+          {botResponse?.length > 0 &&
+            botResponse?.map((message, botResponseIndex) => {
+              return (
+                <div key={botResponseIndex}>
+                  <div
+                    key={botResponseIndex}
+                    className={`gai_chat-bot_message ${
+                      message.isUser ? "user" : "bot"
+                    }`}
+                  >
+                    {message.isUser ? (
+                      <div className="user-message">
+                        <div className="user-message-left">
+                          <div className="user-message-left_byline">
+                            <div>
+                              <span className="user-message-time">
+                                {moment(message.time).format(
+                                  productParams.timeFormat
+                                )}
+                              </span>
+                              <strong className="message_Username">
+                                {message.name}
+                              </strong>
+                            </div>
+                          </div>
+                          <div className="user-message-text">
+                            {message.text}
+                          </div>
+                        </div>
+                        <div className="user-message-right">
+                          <div className="initials-circle">
+                            {message.initials}
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="bot-message">
+                        <div className="bot-message-left">
+                          <div className="bot-name"></div>
+                        </div>
+                        <div className="bot-message-right">
+                          <div className="bot-message-right_byline">
+                            <div className="gai_chatbot_answer_byline_left">
+                              <strong className="bot_username">
+                                {productParams?.componentUserName?.length > 0
+                                  ? productParams.componentUserName
+                                  : ""}
+                              </strong>
+                              <span className="bot-message-time">
+                                {moment(message.time).format(
+                                  productParams.timeFormat
+                                )}
+                              </span>
+                            </div>
+                          </div>
+                          {message.searchResult.search_result.length > 1 ? (
+                            <div className="bot-message-text">
+                              <ul>
+                                {message.searchResult.search_result.map(
+                                  (item, outputIndex) => {
+                                    if (
+                                      !getIsStreamingApplicable(
+                                        message.queryType
+                                      ) &&
+                                      outputIndex >=
+                                        productParams?.bulletCountReadMoreLimit &&
+                                      !message.isReadMoreClicked &&
+                                      productParams?.bulletCountReadMoreLimit >
+                                        0
+                                    ) {
+                                      return null;
+                                    }
+                                    return (
+                                      <li key={outputIndex}>
+                                        <MarkdownRenderer
+                                          openShowReferencePanel={
+                                            openShowReferencePanel
+                                          }
+                                          callBack={props.callBack}
+                                          resultId={
+                                            message.searchResult.result_id
+                                          }
+                                          markdownText={
+                                            item.search_output
+                                              ? item.search_output
+                                              : item.key_takeaways
+                                          }
+                                        />
+                                      </li>
+                                    );
+                                  }
+                                )}
+                                {!getIsStreamingApplicable(message.queryType) &&
+                                  productParams?.bulletCountReadMoreLimit > 0 &&
+                                  message.searchResult.search_result.length >
+                                    productParams?.bulletCountReadMoreLimit && (
+                                    <button
+                                      className="gai_read_more_btn"
+                                      onClick={(e) => {
+                                        handleReadButton(
+                                          message.isReadMoreClicked,
+                                          message.searchResult.result_id
+                                        );
+                                      }}
+                                    >
+                                      {!message.isReadMoreClicked
+                                        ? "Read more"
+                                        : "Read less"}
+                                    </button>
+                                  )}
+                              </ul>
+                              {getMessageActions(
+                                message.searchResult.result_id,
+                                message.searchResult.search_result,
+                                message,
+                                botResponseIndex
+                              )}
+                            </div>
+                          ) : (
+                            <div className="bot-message-text">
+                              {message.searchResult.search_result[0]
+                                .chart_Data &&
+                                message.searchResult.search_result[0].chart_Data.map(
+                                  (item, chartIndex) => (
+                                    <Chart
+                                      key={chartIndex}
+                                      type={item.type}
+                                      data={item}
+                                      uniqueId={
+                                        botResponseIndex + "_" + chartIndex
+                                      }
+                                      resultId={message.searchResult.result_id}
+                                      callBack={props.callBack}
+                                    />
+                                  )
+                                )}
+                              <MarkdownRenderer
+                                openShowReferencePanel={openShowReferencePanel}
+                                callBack={props.callBack}
+                                resultId={message.searchResult.result_id}
+                                markdownText={
+                                  message.searchResult.search_result[0]
+                                    .search_output
+                                    ? !getIsStreamingApplicable(
+                                        message.queryType
+                                      ) &&
+                                      productParams?.wordCountReadMoreLimit >
+                                        0 &&
+                                      productParams?.wordCountReadMoreLimit <
+                                        message.searchResult.search_result[0].search_output?.split(
+                                          " "
+                                        ).length &&
+                                      !message.isReadMoreClicked
+                                      ? getLimitedWordsFromMessage(
+                                          message.searchResult.search_result[0]
+                                            .search_output
+                                        )
+                                      : message.searchResult.search_result[0]
+                                          .search_output
+                                    : !getIsStreamingApplicable(
+                                        message.queryType
+                                      ) &&
+                                      productParams?.wordCountReadMoreLimit >
+                                        0 &&
+                                      productParams?.wordCountReadMoreLimit <
+                                        message.searchResult.search_result[0].key_takeaways?.split(
+                                          " "
+                                        ).length &&
+                                      !message.isReadMoreClicked
+                                    ? getLimitedWordsFromMessage(
+                                        message.searchResult.search_result[0]
+                                          .key_takeaways
+                                      )
+                                    : message.searchResult.search_result[0]
+                                        .key_takeaways
+                                }
+                              />
+                              {getSearchViaWebVisible(
+                                message.searchResult,
+                                message.sourceType
+                              ) &&
+                                botResponseIndex === botResponse.length - 1 && (
+                                  <div className="gai_CTA_wrapper">
+                                    <Button
+                                      label={
+                                        productParams.actionButtons.searchViaWeb
+                                          .label
+                                      }
+                                      className="gai_CTA_btn"
+                                      onClick={handleSearchViaWebClick}
+                                      rounded
+                                    />
+                                    <Tooltip
+                                      className="gai_p-tooltip-text"
+                                      target=".gai_CTA_btn"
+                                      position="top"
+                                    >
+                                      {
+                                        productParams.actionButtons.searchViaWeb
+                                          .toolTip
+                                      }
+                                    </Tooltip>
+                                  </div>
+                                )}
+                              {!getIsStreamingApplicable(message.queryType) &&
+                                productParams?.wordCountReadMoreLimit > 0 &&
+                                (message.searchResult.search_result[0]
+                                  .search_output
+                                  ? message.searchResult.search_result[0].search_output?.split(
+                                      " "
+                                    ).length >
+                                    productParams?.wordCountReadMoreLimit
+                                  : message.searchResult.search_result[0].key_takeaways?.split(
+                                      " "
+                                    ).length >
+                                    productParams?.wordCountReadMoreLimit) && (
+                                  <button
+                                    className="gai_read_more_btn"
+                                    onClick={(e) => {
+                                      handleReadButton(
+                                        message.isReadMoreClicked,
+                                        message.searchResult.result_id
+                                      );
+                                    }}
+                                  >
+                                    {!message.isReadMoreClicked
+                                      ? "Read more"
+                                      : "Read less"}
+                                  </button>
+                                )}
+                              {getMessageActions(
+                                message.searchResult.result_id,
+                                message.searchResult.search_result,
+                                message,
+                                botResponseIndex
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  {productParams.numberOfPromptsToShow > 0 &&
+                    botResponseIndex === botResponse.length - 1 &&
+                    getSuggestedPromptsList(message)}
+                </div>
+              );
+            })}
+
+          <div />
+          {showLoader && <Loader />}
+        </div>
+      </>
+    );
+  };
+
+  const getActionHandler = () => {
+    const ActionHandlerComponentForReact = props.reactAHContainer
+      ? props.reactAHContainer
+      : null;
+
+    if (ActionHandlerComponentForReact) {
+      return (
+        <ActionHandlerComponentForReact
+          handlerKey={actionHandler}
+          responseObj={responseToProduct}
+        />
+      );
+    } else {
+      return (
+        <div>
+          <action-handler-container
+            handler-Key={actionHandler}
+            response-Obj={JSON.stringify(responseToProduct)}
+          />
+        </div>
+      );
+    }
+  };
+
+  const handleCallBackSetToastConfig = () => {
+    setToastConfig({ status: "", message: "" });
+  };
+
+  const showMultiError = (args) => {
+    multiToast.current.show(args);
+  };
+
+  if (globalError || globalFileUploadSuccess || showGlobalMultiError) {
+    if (globalError) {
+      setToastConfig({
+        status: "error",
+        message:
+          globalFileUploadSuccessMsg.length > 0
+            ? globalFileUploadSuccessMsg
+            : "Sorry, something went wrong. Please try again later.",
+      });
+      dispatch(setGlobalError(false));
+      dispatch(setProgressBar(-1));
+      dispatch(setShowUploadLoader(false));
+      setTimeout(() => {
+        dispatch(setFileUploader(true));
+      }, 50);
+
+      if (
+        productParams.sourceList[selectedSource?.source]?.sourceType ===
+        "USERDATA"
+      ) {
+        dispatch(setShowUploadPage(true));
+      }
+    } else if (globalFileUploadSuccess) {
+      setToastConfig({
+        status: "success",
+        message: globalFileUploadSuccessMsg,
+      });
+      dispatch(setGlobalFileUploadSuccess(false));
+      dispatch(setGlobalFileUploadSuccessMsg(""));
+      // dispatch(setProgressBar(-1));
+    } else {
+      showMultiError(globalMultiToast); // create showGlobalMultiError & globalMultiToast
+      dispatch(setShowGlobalMultiError(false));
+      dispatch(setGlobalMultiToast([]));
+    }
+  }
+
+  if (globalInfo && globalQueryType.length > 0) {
+    globalQueryType === "q&a"
+      ? setToastConfig({
+          status: "info",
+          message:
+            productParams.actionButtons.switchingQueryType_KeytakawayToQna,
+        })
+      : setToastConfig({
+          status: "info",
+          message:
+            productParams.actionButtons.switchingQueryType_QnaToKeytakaway,
+        });
+    dispatch(setGlobalQueryType(""));
+    dispatch(setGlobalInfo(false));
+  }
+
+  return (
+    <>
+      {fileUploader && (
+        <div
+          style={{ display: showUploadPage ? "block" : "none", height: "100%" }}
+        >
+          <FileUploader />
+        </div>
+      )}
+      <Toast ref={multiToast} />
+      <ToastMessages
+        config={toastConfig}
+        callBackSetToastConfig={handleCallBackSetToastConfig}
+      />
+      <div
+        style={{
+          display: !showUploadPage ? "block" : "none",
+          height: "100%",
+        }}
+      >
+        {showSearchViaWebPopup && (
+          <ConfirmDialogPopup
+            message={productParams.actionButtons.searchViaWeb.warningMessage}
+            accept={handleAccept}
+            reject={handleReject}
+            headingMessage={
+              productParams.actionButtons.searchViaWeb
+                .headingSearchViaWebMessage
+            }
+          />
+        )}
+
+        {downloadLoading && (
+          <DownloadLoader callBackClose={handleCloseDownloadLoaderClose} />
+        )}
+        {isReferencesVisible && (
+          <References
+            searchReferences={searchReferences}
+            callBackCloseReferences={toggleReferences}
+            documentsReference={documentsReference}
+            callBack={props.callBack}
+            sourceType={sourceTypeForShowReferences}
+            citationNumber={citationNumber}
+          />
+        )}
+
+        <div className="gai_chat-bot-content_middle">
+          {actionHandler && actionHandler.trim().length > 0
+            ? getActionHandler()
+            : getChatContent()}
+          {invalidDocLocatorTypes.length > 0 && (
+            <div className="gai_user_infomsg">
+              <div className="gai_user_infomsg_wrapper">
+                <span className="gai_userinfo_icon"></span>
+                <p className="gai_user_infomsg_content">
+                  {"Following contents cannot be added - " +
+                    invalidDocLocatorTypes.join()}
+                </p>
+                <span className="gai_info_close_ico" onClick={closeUserinfo}>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="10"
+                    height="10"
+                    viewBox="0 0 12.893 12.892"
+                  >
+                    <path
+                      id="Cross"
+                      d="M7.627,6.582l5.02-5.02A.835.835,0,0,0,11.466.381L6.446,5.4,1.426.381A.835.835,0,1,0,.245,1.562l5.02,5.02L.245,11.6a.835.835,0,1,0,1.181,1.181l5.02-5.02,5.02,5.02A.835.835,0,1,0,12.648,11.6Zm0,0"
+                      transform="translate(0 -0.136)"
+                    />
+                  </svg>
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </>
+  );
+};
+
+ChatContent.propTypes = {
+  callBack: PropTypes.func.isRequired,
+  loadingState: PropTypes.bool.isRequired,
+  showLoaderState: PropTypes.bool.isRequired,
+  reactAHContainer: PropTypes.elementType,
+};
+
+export default React.memo(ChatContent);
