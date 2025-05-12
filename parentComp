@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import ChatHistoryPanel from './ChatHistoryPanel';
 
 const chatPayload = {
   userId: "demo@evalueserve.com",
@@ -102,8 +103,17 @@ const ChatHistoryRoot = () => {
 
   return (
     <div>
-      <h2>Chat History Panel</h2>
-      {/* Implement your UI or pass these functions to child components as needed */}
+      <ChatHistoryPanel
+        chatHistory={chatHistory}
+        totalRecords={totalRecords}
+        onLoadMoreData={onLoadMoreData}
+        onSearchQueries={onSearchQueries}
+        onCloseBotHistoryPanel={onCloseBotHistoryPanel}
+        onSendSaveData={onSendSaveData}
+        onDeleteData={onDeleteData}
+        onDownloadData={onDownloadData}
+        getChatHistoryLabels={onGetChatHistoryLabels}
+      />
     </div>
   );
 };
