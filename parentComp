@@ -1,0 +1,111 @@
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+
+const chatPayload = {
+  userId: "demo@evalueserve.com",
+  accountId: 41,
+  projectId: 11,
+  pageNo: 1,
+  noOfRows: 10,
+  searchKey: ""
+};
+
+const ChatHistoryRoot = () => {
+  const [chatHistory, setChatHistory] = useState([]);
+  const [searchKey, setSearchKey] = useState('');
+  const [pageNo, setPageNo] = useState(1);
+  const [totalRecords, setTotalRecords] = useState(0);
+
+  const fetchChatHistory = async (payload = chatPayload) => {
+    try {
+      const response = await axios.post('/api/getChatHistory', payload);
+      if (response.data.result) {
+        return response.data.response;
+      }
+    } catch (error) {
+      console.error('Error fetching chat history:', error);
+    }
+    return null;
+  };
+
+  const onChatHistoryData = async () => {
+    const payload = { ...chatPayload, pageNo, searchKey };
+    const data = await fetchChatHistory(payload);
+    if (data) {
+      setChatHistory(data.chatbotHistory);
+      setTotalRecords(data.totalrecords);
+    }
+  };
+
+  const onLoadMoreData = async () => {
+    const newPage = pageNo + 1;
+    const payload = { ...chatPayload, pageNo: newPage, searchKey };
+    const data = await fetchChatHistory(payload);
+    if (data) {
+      setChatHistory(prev => [...prev, ...data.chatbotHistory]);
+      setPageNo(newPage);
+    }
+  };
+
+  const onSearchQueries = async (key) => {
+    setSearchKey(key);
+    setPageNo(1);
+    const payload = { ...chatPayload, searchKey: key, pageNo: 1 };
+    const data = await fetchChatHistory(payload);
+    if (data) {
+      setChatHistory(data.chatbotHistory);
+      setTotalRecords(data.totalrecords);
+    }
+  };
+
+  const onGetChatHistoryLabels = () => {
+    return chatHistory.map(item => item.query);
+  };
+
+  const onCloseBotHistoryPanel = () => {
+    setChatHistory([]);
+    setSearchKey('');
+    setPageNo(1);
+  };
+
+  const onSendSaveData = async (data) => {
+    try {
+      await axios.post('/api/saveChatHistory', data);
+    } catch (error) {
+      console.error('Error saving chat data:', error);
+    }
+  };
+
+  const onDeleteData = async (id) => {
+    try {
+      await axios.post('/api/deleteChatHistory', { id });
+      setChatHistory(prev => prev.filter(item => item.id !== id));
+    } catch (error) {
+      console.error('Error deleting chat data:', error);
+    }
+  };
+
+  const onDownloadData = (id) => {
+    const item = chatHistory.find(item => item.id === id);
+    const blob = new Blob([JSON.stringify(item, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `chat_${id}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  useEffect(() => {
+    onChatHistoryData();
+  }, []);
+
+  return (
+    <div>
+      <h2>Chat History Panel</h2>
+      {/* Implement your UI or pass these functions to child components as needed */}
+    </div>
+  );
+};
+
+export default ChatHistoryRoot;
