@@ -1,0 +1,260 @@
+<div class="chat-history-panel">
+    <!-- Title Wrapper -->
+    <div class="panel-title-wrapper">
+        <div class="slider-panel-title">
+            <h4>{{ windowTitleMessage }}</h4>
+        </div>
+        <div class="closebtn" (click)="closeBotHistory(false)">
+            <svg width="14" height="13" viewBox="0 0 14 13" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M7.82496 6.44559L12.845 1.42559C13.0016 1.26898 13.0896 1.05657 13.0896 0.835093C13.0896 0.613613 13.0016 0.401203 12.845 0.244593C12.6883 0.0879828 12.4759 1.65016e-09 12.2545 0C12.033 -1.65016e-09 11.8206 0.0879828 11.664 0.244593L6.64396 5.26359L1.62396 0.244593C1.46735 0.0879828 1.25494 0 1.03346 0C0.811977 0 0.599568 0.0879828 0.442957 0.244593C0.286347 0.401203 0.198364 0.613613 0.198364 0.835093C0.198364 1.05657 0.286347 1.26898 0.442957 1.42559L5.46296 6.44559L0.442957 11.4636C0.365412 11.5411 0.303899 11.6332 0.261932 11.7345C0.219965 11.8358 0.198364 11.9444 0.198364 12.0541C0.198364 12.1638 0.219965 12.2724 0.261932 12.3737C0.303899 12.475 0.365412 12.567 0.442957 12.6446C0.520503 12.7221 0.612563 12.7837 0.713881 12.8256C0.815199 12.8676 0.923791 12.8892 1.03346 12.8892C1.14312 12.8892 1.25172 12.8676 1.35303 12.8256C1.45435 12.7837 1.54641 12.7221 1.62396 12.6446L6.64396 7.62459L11.664 12.6446C11.7415 12.7222 11.8336 12.7838 11.9349 12.8258C12.0363 12.8678 12.1449 12.8895 12.2546 12.8895C12.3643 12.8896 12.473 12.868 12.5743 12.8261C12.6757 12.7841 12.7678 12.7226 12.8455 12.6451C12.9231 12.5675 12.9846 12.4755 13.0267 12.3741C13.0687 12.2728 13.0904 12.1642 13.0904 12.0544C13.0905 11.9447 13.0689 11.8361 13.0269 11.7347C12.985 11.6333 12.9235 11.5412 12.846 11.4636L7.82496 6.44559Z" fill="black"/>
+            </svg>                
+        </div>
+    </div>
+    <!-- Disclaimer Text -->
+     <div #disclaimerWindow class="disclaimer-window" [ngClass]="!isChatHistoryDisabled ? '' : 'btn-disabled'" *ngIf="showDisclaimerWindow" [ngStyle]="{'margin-bottom': !searchVisible ? '10px' : '0'}">
+        <div class="disclaimer-text">
+            {{ disclaimerText }}
+        </div>
+        <div class="closebtnDisclaimer" (click)="closeDisclaimerWindow()">
+            <svg width="10" height="10" viewBox="0 0 14 13" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M7.82496 6.44559L12.845 1.42559C13.0016 1.26898 13.0896 1.05657 13.0896 0.835093C13.0896 0.613613 13.0016 0.401203 12.845 0.244593C12.6883 0.0879828 12.4759 1.65016e-09 12.2545 0C12.033 -1.65016e-09 11.8206 0.0879828 11.664 0.244593L6.64396 5.26359L1.62396 0.244593C1.46735 0.0879828 1.25494 0 1.03346 0C0.811977 0 0.599568 0.0879828 0.442957 0.244593C0.286347 0.401203 0.198364 0.613613 0.198364 0.835093C0.198364 1.05657 0.286347 1.26898 0.442957 1.42559L5.46296 6.44559L0.442957 11.4636C0.365412 11.5411 0.303899 11.6332 0.261932 11.7345C0.219965 11.8358 0.198364 11.9444 0.198364 12.0541C0.198364 12.1638 0.219965 12.2724 0.261932 12.3737C0.303899 12.475 0.365412 12.567 0.442957 12.6446C0.520503 12.7221 0.612563 12.7837 0.713881 12.8256C0.815199 12.8676 0.923791 12.8892 1.03346 12.8892C1.14312 12.8892 1.25172 12.8676 1.35303 12.8256C1.45435 12.7837 1.54641 12.7221 1.62396 12.6446L6.64396 7.62459L11.664 12.6446C11.7415 12.7222 11.8336 12.7838 11.9349 12.8258C12.0363 12.8678 12.1449 12.8895 12.2546 12.8895C12.3643 12.8896 12.473 12.868 12.5743 12.8261C12.6757 12.7841 12.7678 12.7226 12.8455 12.6451C12.9231 12.5675 12.9846 12.4755 13.0267 12.3741C13.0687 12.2728 13.0904 12.1642 13.0904 12.0544C13.0905 11.9447 13.0689 11.8361 13.0269 11.7347C12.985 11.6333 12.9235 11.5412 12.846 11.4636L7.82496 6.44559Z" fill="black"/>
+            </svg>                
+        </div>
+     </div>
+    <!-- Search Wrapper -->
+     <div *ngIf="searchVisible" [ngClass]="!isChatHistoryDisabled ? '' : 'btn-disabled'" class="chat-history-search-wrapper">
+        <input type="text" placeholder="{{ chatHistorySearchBarPlaceholderText }}" name="chatSearch" [formControl]="searchControl" class="form-control">
+     </div>
+     <!-- Queries Results -->
+     <div [ngClass]="!isChatHistoryDisabled ? '' : 'btn-disabled'">
+      <div class="chat-queries-wrapper scrollbar" [ngClass]="totalRecords > currentChatData.length ? 'loadMoreVisible' : ''" [ngStyle]="{'height': chatQueriesWrapperHeight}">
+        <ng-container *ngIf="allThreadListView; then listView; else bifurcatedView"></ng-container>
+        <!-- Bifurcated View -->
+        <ng-template #bifurcatedView>
+            <ul *ngIf="currentChatData.length > 0 && chatHistoryLoading == false">
+                <!-- Today -->
+                <li *ngIf="categorizedData.today.length > 0" class="chat-history-data-heading data-heading-today">Today</li>
+                <li *ngFor="let history of categorizedData.today; let ind=index;">
+                    <!-- Edit Wrapper / Input -->
+                    <div class="history-edit-input-wrapper" *ngIf="history.id == queryEditId && closeHistoryBlock">
+                        <input type="text" [(ngModel)]="newQueryTitle" [value]="newQueryTitle" class="form-control" id="queryName"/>
+                        <div class="editHistoryActionWrapper">
+                            <div class="editHistorySaved" (click)="saveEditQuery(newQueryTitle,history.id)">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M14.8378 3.18476C15.0635 3.42114 15.0523 3.79338 14.8129 4.01617L5.36454 12.8078C5.08171 13.071 4.63775 13.0629 4.36497 12.7896L1.17138 9.5896C0.940458 9.35822 0.943251 8.98583 1.17762 8.75785C1.41199 8.52986 1.78918 8.53262 2.02011 8.76401L4.88654 11.6362L13.9956 3.16015C14.2351 2.93735 14.6121 2.94837 14.8378 3.18476Z" fill="#3265AA"/>
+                                </svg>                            
+                            </div>
+                            <div class="editHistoryCancel" (click)="closeHistoryBlock = false">
+                                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M2.13107 2.24194L2.18306 2.18306C2.40836 1.95776 2.76288 1.94042 3.00806 2.13107L3.06694 2.18306L7 6.11562L10.9331 2.18306C11.1771 1.93898 11.5729 1.93898 11.8169 2.18306C12.061 2.42714 12.061 2.82286 11.8169 3.06694L7.88438 7L11.8169 10.9331C12.0422 11.1584 12.0596 11.5129 11.8689 11.7581L11.8169 11.8169C11.5916 12.0422 11.2371 12.0596 10.9919 11.8689L10.9331 11.8169L7 7.88438L3.06694 11.8169C2.82286 12.061 2.42714 12.061 2.18306 11.8169C1.93898 11.5729 1.93898 11.1771 2.18306 10.9331L6.11562 7L2.18306 3.06694C1.95776 2.84164 1.94042 2.48712 2.13107 2.24194L2.18306 2.18306L2.13107 2.24194Z" fill="#3265AA"/>
+                                </svg>                            
+                            </div>
+                        </div>
+                    </div>
+                    <div class="history-title-wrapper" [class.active]="selectedIndex == history.id" pTooltip="{{ showTooltip? (history.query.length > querySplitLength ? history.query : ''):'' }}" tooltipPosition="left" tooltipStyleClass="chatbotqueryTooltip">
+                        <span class="chatHistoryQuery" (click)="showChatHistory(history)">{{ history.query.length > querySplitLength ? (history.query | slice: 0:querySplitLength)+'...' : history.query  }} </span>
+                        <div class="action-wrapper" *ngIf="checkDropdownItem" id="historyAction{{ind}}" data-bs-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false" (click)="adjustDropdownPosition($event)">
+                            <svg width="2" height="10" viewBox="0 0 2 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <rect width="2" height="2" fill="black"/>
+                                <rect y="4" width="2" height="2" fill="black"/>
+                                <rect y="8" width="2" height="2" fill="black"/>
+                            </svg>                        
+                        </div>
+                        <!-- Dropdown -->
+                        <ul *ngIf="disableChatHistoryClick == false" #dropdown class="chat-history-dropdown dropdown-menu" attr.aria-labelledby="historyAction{{ind}}">
+                            <li *ngFor="let action of historyActionButtons; let ind = index" (click)="handleClick(action, history)" [style.display]="action.isVisible ? 'block' : 'none'">
+                                {{ action.title }}
+                            </li>
+                        </ul>
+                    </div>
+                </li>
+                <!-- Yesterday -->
+                <li *ngIf="categorizedData.yesterday.length > 0" class="chat-history-data-heading data-heading-yesterday">Yesterday</li>
+                <li *ngFor="let history of categorizedData.yesterday; let ind=index;">
+                    <!-- Edit Wrapper / Input -->
+                    <div class="history-edit-input-wrapper" *ngIf="history.id == queryEditId && closeHistoryBlock">
+                        <input type="text" [(ngModel)]="newQueryTitle" [value]="newQueryTitle" class="form-control" id="queryName"/>
+                        <div class="editHistoryActionWrapper">
+                            <div class="editHistorySaved" (click)="saveEditQuery(newQueryTitle,history.id)">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M14.8378 3.18476C15.0635 3.42114 15.0523 3.79338 14.8129 4.01617L5.36454 12.8078C5.08171 13.071 4.63775 13.0629 4.36497 12.7896L1.17138 9.5896C0.940458 9.35822 0.943251 8.98583 1.17762 8.75785C1.41199 8.52986 1.78918 8.53262 2.02011 8.76401L4.88654 11.6362L13.9956 3.16015C14.2351 2.93735 14.6121 2.94837 14.8378 3.18476Z" fill="#3265AA"/>
+                                </svg>                            
+                            </div>
+                            <div class="editHistoryCancel" (click)="closeHistoryBlock = false">
+                                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M2.13107 2.24194L2.18306 2.18306C2.40836 1.95776 2.76288 1.94042 3.00806 2.13107L3.06694 2.18306L7 6.11562L10.9331 2.18306C11.1771 1.93898 11.5729 1.93898 11.8169 2.18306C12.061 2.42714 12.061 2.82286 11.8169 3.06694L7.88438 7L11.8169 10.9331C12.0422 11.1584 12.0596 11.5129 11.8689 11.7581L11.8169 11.8169C11.5916 12.0422 11.2371 12.0596 10.9919 11.8689L10.9331 11.8169L7 7.88438L3.06694 11.8169C2.82286 12.061 2.42714 12.061 2.18306 11.8169C1.93898 11.5729 1.93898 11.1771 2.18306 10.9331L6.11562 7L2.18306 3.06694C1.95776 2.84164 1.94042 2.48712 2.13107 2.24194L2.18306 2.18306L2.13107 2.24194Z" fill="#3265AA"/>
+                                </svg>                            
+                            </div>
+                        </div>
+                    </div>
+                    <div class="history-title-wrapper" [class.active]="selectedIndex == history.id" pTooltip="{{ showTooltip? (history.query.length > querySplitLength ? history.query : ''):'' }}" tooltipPosition="left" tooltipStyleClass="chatbotqueryTooltip">
+                        <span class="chatHistoryQuery" (click)="showChatHistory(history)">{{ history.query.length > querySplitLength ? (history.query | slice: 0:querySplitLength)+'...' : history.query }}</span>
+                        <div class="action-wrapper" *ngIf="checkDropdownItem" id="historyAction{{ind}}" data-bs-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false" (click)="adjustDropdownPosition($event)">
+                            <svg width="2" height="10" viewBox="0 0 2 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <rect width="2" height="2" fill="black"/>
+                                <rect y="4" width="2" height="2" fill="black"/>
+                                <rect y="8" width="2" height="2" fill="black"/>
+                            </svg>                        
+                        </div>
+                        <ul *ngIf="disableChatHistoryClick == false" #dropdown class="chat-history-dropdown dropdown-menu" attr.aria-labelledby="historyAction{{ind}}">
+                            <li *ngFor="let action of historyActionButtons; let ind = index" (click)="handleClick(action, history)" [style.display]="action.isVisible ? 'block' : 'none'">
+                                {{ action.title }}
+                            </li>
+                        </ul>
+                    </div>
+                </li>
+                <!-- Last 7 Days -->
+                <li *ngIf="categorizedData.previous7Days.length > 0" class="chat-history-data-heading data-heading-p-seven-days">Last 7 Days</li>
+                <li *ngFor="let history of categorizedData.previous7Days; let ind=index;">
+                    <!-- Edit Wrapper / Input -->
+                    <div class="history-edit-input-wrapper" *ngIf="history.id == queryEditId && closeHistoryBlock">
+                        <input type="text" [(ngModel)]="newQueryTitle" [value]="newQueryTitle" class="form-control" id="queryName"/>
+                        <div class="editHistoryActionWrapper">
+                            <div class="editHistorySaved" (click)="saveEditQuery(newQueryTitle,history.id)">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M14.8378 3.18476C15.0635 3.42114 15.0523 3.79338 14.8129 4.01617L5.36454 12.8078C5.08171 13.071 4.63775 13.0629 4.36497 12.7896L1.17138 9.5896C0.940458 9.35822 0.943251 8.98583 1.17762 8.75785C1.41199 8.52986 1.78918 8.53262 2.02011 8.76401L4.88654 11.6362L13.9956 3.16015C14.2351 2.93735 14.6121 2.94837 14.8378 3.18476Z" fill="#3265AA"/>
+                                </svg>                            
+                            </div>
+                            <div class="editHistoryCancel" (click)="closeHistoryBlock = false">
+                                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M2.13107 2.24194L2.18306 2.18306C2.40836 1.95776 2.76288 1.94042 3.00806 2.13107L3.06694 2.18306L7 6.11562L10.9331 2.18306C11.1771 1.93898 11.5729 1.93898 11.8169 2.18306C12.061 2.42714 12.061 2.82286 11.8169 3.06694L7.88438 7L11.8169 10.9331C12.0422 11.1584 12.0596 11.5129 11.8689 11.7581L11.8169 11.8169C11.5916 12.0422 11.2371 12.0596 10.9919 11.8689L10.9331 11.8169L7 7.88438L3.06694 11.8169C2.82286 12.061 2.42714 12.061 2.18306 11.8169C1.93898 11.5729 1.93898 11.1771 2.18306 10.9331L6.11562 7L2.18306 3.06694C1.95776 2.84164 1.94042 2.48712 2.13107 2.24194L2.18306 2.18306L2.13107 2.24194Z" fill="#3265AA"/>
+                                </svg>                            
+                            </div>
+                        </div>
+                    </div>
+                    <div class="history-title-wrapper" [class.active]="selectedIndex == history.id" pTooltip="{{ showTooltip? (history.query.length > querySplitLength ? history.query : ''):'' }}" tooltipPosition="left" tooltipStyleClass="chatbotqueryTooltip">
+                        <span class="chatHistoryQuery" (click)="showChatHistory(history)">{{ history.query.length > querySplitLength ? (history.query | slice: 0:querySplitLength)+'...' : history.query }}</span>
+                        <div class="history-action-wrapper" id="historyAction{{ind}}" data-bs-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false" (click)="adjustDropdownPosition($event)">
+                            <span>{{ history.localTimestamp | date:chatHistoryDateFormat }}</span>
+                            <div class="action-wrapper" *ngIf="checkDropdownItem">
+                                <svg width="2" height="10" viewBox="0 0 2 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <rect width="2" height="2" fill="black"/>
+                                    <rect y="4" width="2" height="2" fill="black"/>
+                                    <rect y="8" width="2" height="2" fill="black"/>
+                                </svg>                        
+                            </div>
+                        </div>
+                        <ul *ngIf="disableChatHistoryClick == false && checkDropdownItem" #dropdown class="chat-history-dropdown dropdown-menu" attr.aria-labelledby="historyAction{{ind}}">
+                            <li *ngFor="let action of historyActionButtons; let ind = index" (click)="handleClick(action, history)" [style.display]="action.isVisible ? 'block' : 'none'">
+                                {{ action.title }}
+                            </li>
+                        </ul>
+                    </div>
+                </li>
+                <!-- Previous 30 Days -->
+                <!-- <li *ngIf="categorizedData.previous30Days.length > 0" class="chat-history-data-heading data-heading-p-t-days">Previous 30 Days</li>
+                <li *ngFor="let history of categorizedData.previous30Days; let ind=index;">
+                   
+                    <div class="history-edit-input-wrapper" *ngIf="history.id == queryEditId && closeHistoryBlock">
+                        <input type="text" [(ngModel)]="newQueryTitle" [value]="newQueryTitle" class="form-control" id="queryName"/>
+                        <div class="editHistoryActionWrapper">
+                            <div class="editHistorySaved" (click)="saveEditQuery(newQueryTitle,history.id )">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M14.8378 3.18476C15.0635 3.42114 15.0523 3.79338 14.8129 4.01617L5.36454 12.8078C5.08171 13.071 4.63775 13.0629 4.36497 12.7896L1.17138 9.5896C0.940458 9.35822 0.943251 8.98583 1.17762 8.75785C1.41199 8.52986 1.78918 8.53262 2.02011 8.76401L4.88654 11.6362L13.9956 3.16015C14.2351 2.93735 14.6121 2.94837 14.8378 3.18476Z" fill="#3265AA"/>
+                                </svg>                            
+                            </div>
+                            <div class="editHistoryCancel" (click)="closeHistoryBlock = false">
+                                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M2.13107 2.24194L2.18306 2.18306C2.40836 1.95776 2.76288 1.94042 3.00806 2.13107L3.06694 2.18306L7 6.11562L10.9331 2.18306C11.1771 1.93898 11.5729 1.93898 11.8169 2.18306C12.061 2.42714 12.061 2.82286 11.8169 3.06694L7.88438 7L11.8169 10.9331C12.0422 11.1584 12.0596 11.5129 11.8689 11.7581L11.8169 11.8169C11.5916 12.0422 11.2371 12.0596 10.9919 11.8689L10.9331 11.8169L7 7.88438L3.06694 11.8169C2.82286 12.061 2.42714 12.061 2.18306 11.8169C1.93898 11.5729 1.93898 11.1771 2.18306 10.9331L6.11562 7L2.18306 3.06694C1.95776 2.84164 1.94042 2.48712 2.13107 2.24194L2.18306 2.18306L2.13107 2.24194Z" fill="#3265AA"/>
+                                </svg>                            
+                            </div>
+                        </div>
+                    </div>
+                    <div class="history-title-wrapper" [class.active]="selectedIndex == history.id" pTooltip="{{ showTooltip? (history.query.length > querySplitLength ? history.query : ''):'' }}" tooltipPosition="left" tooltipStyleClass="chatbotqueryTooltip">
+                        <span class="chatHistoryQuery" (click)="showChatHistory(history)">{{ history.query.length > querySplitLength ? (history.query | slice: 0:querySplitLength)+'...' : history.query }}</span>
+                        <div class="history-action-wrapper" data-bs-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false" (click)="adjustDropdownPosition($event)">
+                            <span>{{ history.localTimestamp | date:chatHistoryDateFormat }}</span>
+                            <div class="action-wrapper" *ngIf="checkDropdownItem && checkDropdownItem">
+                                <svg width="2" height="10" viewBox="0 0 2 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <rect width="2" height="2" fill="black"/>
+                                    <rect y="4" width="2" height="2" fill="black"/>
+                                    <rect y="8" width="2" height="2" fill="black"/>
+                                </svg>                        
+                            </div>
+                        </div>
+                        <ul *ngIf="disableChatHistoryClick == false" #dropdown class="chat-history-dropdown dropdown-menu" attr.aria-labelledby="historyAction{{ind}}">
+                            <li *ngFor="let action of historyActionButtons; let ind = index" (click)="handleClick(action, history)" [style.display]="action.isVisible ? 'block' : 'none'">
+                                {{ action.title }}
+                            </li>
+                        </ul>
+                    </div>
+                </li> -->
+            </ul>
+        </ng-template>
+
+        <!-- List View -->
+        <ng-template #listView>
+            <ul *ngIf="currentChatData.length > 0 && chatHistoryLoading == false">
+                <li class="chat-history-data-heading data-heading-today">{{ allThreadListViewTitleMessage }}</li>
+                <li *ngFor="let history of currentChatData; let ind=index;">
+                    <!-- Edit Wrapper / Input -->
+                    <div class="history-edit-input-wrapper" *ngIf="history.id == queryEditId && closeHistoryBlock">
+                        <input type="text" [(ngModel)]="newQueryTitle" [value]="newQueryTitle" class="form-control" id="queryName"/>
+                        <div class="editHistoryActionWrapper">
+                            <div class="editHistorySaved" (click)="saveEditQuery(newQueryTitle,history.id)">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M14.8378 3.18476C15.0635 3.42114 15.0523 3.79338 14.8129 4.01617L5.36454 12.8078C5.08171 13.071 4.63775 13.0629 4.36497 12.7896L1.17138 9.5896C0.940458 9.35822 0.943251 8.98583 1.17762 8.75785C1.41199 8.52986 1.78918 8.53262 2.02011 8.76401L4.88654 11.6362L13.9956 3.16015C14.2351 2.93735 14.6121 2.94837 14.8378 3.18476Z" fill="#3265AA"/>
+                                </svg>                            
+                            </div>
+                            <div class="editHistoryCancel" (click)="closeHistoryBlock = false">
+                                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M2.13107 2.24194L2.18306 2.18306C2.40836 1.95776 2.76288 1.94042 3.00806 2.13107L3.06694 2.18306L7 6.11562L10.9331 2.18306C11.1771 1.93898 11.5729 1.93898 11.8169 2.18306C12.061 2.42714 12.061 2.82286 11.8169 3.06694L7.88438 7L11.8169 10.9331C12.0422 11.1584 12.0596 11.5129 11.8689 11.7581L11.8169 11.8169C11.5916 12.0422 11.2371 12.0596 10.9919 11.8689L10.9331 11.8169L7 7.88438L3.06694 11.8169C2.82286 12.061 2.42714 12.061 2.18306 11.8169C1.93898 11.5729 1.93898 11.1771 2.18306 10.9331L6.11562 7L2.18306 3.06694C1.95776 2.84164 1.94042 2.48712 2.13107 2.24194L2.18306 2.18306L2.13107 2.24194Z" fill="#3265AA"/>
+                                </svg>                            
+                            </div>
+                        </div>
+                    </div>
+                    <div class="history-title-wrapper" [class.active]="selectedIndex == history.id" pTooltip="{{ showTooltip? (history.query.length > querySplitLength ? history.query : '') :'' }}" tooltipPosition="left" tooltipStyleClass="chatbotqueryTooltip">
+                        <span class="chatHistoryQuery" (click)="showChatHistory(history)">{{ history.query.length > querySplitLength ? (history.query | slice: 0:querySplitLength)+'...' : history.query }}</span>
+                        <div class="history-action-wrapper" id="historyAction{{ind}}" data-bs-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false" (click)="adjustDropdownPosition($event)">
+                            <span>{{ history.localTimestamp | date:chatHistoryDateFormat }}</span>
+                            <div class="action-wrapper" *ngIf="checkDropdownItem">
+                                <svg width="2" height="10" viewBox="0 0 2 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <rect width="2" height="2" fill="black"/>
+                                    <rect y="4" width="2" height="2" fill="black"/>
+                                    <rect y="8" width="2" height="2" fill="black"/>
+                                </svg>                        
+                            </div>
+                        </div>
+                        <ul *ngIf="disableChatHistoryClick == false && checkDropdownItem" #dropdown class="chat-history-dropdown dropdown-menu" attr.aria-labelledby="historyAction{{ind}}">
+                            <li *ngFor="let action of historyActionButtons; let ind = index" (click)="handleClick(action, history)" [style.display]="action.isVisible ? 'block' : 'none'">
+                                {{ action.title }}
+                            </li>
+                        </ul>
+                    </div>
+                </li>
+            </ul>
+        </ng-template>
+        <div class="chatHistory-no-record-found-wrapper" *ngIf="currentChatData.length == 0 && chatHistoryLoading == false">
+            <div class="no-data-found">
+              <p>{{ noRecordFoundMessageText }}</p>
+            </div>
+        </div>
+        <!-- <div class="chat-history-loading" *ngIf="chatHistoryLoading == true">
+            <div class="loader_pulse">
+                <div></div>
+                <div></div>
+                <div></div>
+                <div></div>
+                <div></div>
+            </div>
+        </div> -->
+        <div class="loader-wrapper" *ngIf="chatHistoryLoading == true">
+            <div class="page-loader">
+              <div class="loader-pulse">
+                <div></div>
+                <div></div>
+                <div></div>
+                <div></div>
+                <div></div>
+              </div>
+              <div class="loader_text">Loading</div>
+            </div>
+          </div>
+        <div class="load-more-wrapper" *ngIf="(totalRecords > currentChatData.length) && (currentChatData.length > 0)">
+            <a class="load-more-button" (click)="loadMoreChats()">{{ loadMoreButtonText }}</a>
+        </div>
+      </div>
+    </div>
+</div>
+<p-confirmDialog header="{{ queryDeleteConfirmationHeaderMessage }}" class="custom-dialog" icon="pi pi-exclamation-triangle"></p-confirmDialog>
+<p-toast position="bottom-right" key="br"></p-toast>
