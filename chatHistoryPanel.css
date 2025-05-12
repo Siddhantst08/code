@@ -1,0 +1,153 @@
+.chat-history-panel {
+    background-color: var(--white);
+    width: 300px;
+    height: 100%;
+}
+
+.closebtn {
+    cursor: pointer;
+}
+
+.panel-title-wrapper {
+    border-bottom: 1px solid var(--grey);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px;
+}
+
+.panel-title-wrapper h4 {
+    margin: 0;
+}
+
+.chat-history-search-wrapper {
+    padding: 10px;
+}
+
+.chat-history-search-wrapper input.form-control {
+    background-color: var(--light);
+    border: 0;
+    border-radius: 15px;
+    background-image: url("data:image/svg+xml,%3Csvg width='14' height='14' viewBox='0 0 17 17' fill='none' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink'%3E%3Crect width='17' height='17' fill='url(%23pattern0_824_5789)'/%3E%3Cdefs%3E%3Cpattern id='pattern0_824_5789' patternContentUnits='objectBoundingBox' width='1' height='1'%3E%3Cuse xlink:href='%23image0_824_5789' transform='scale(0.0111111)'/%3E%3C/pattern%3E%3Cimage id='image0_824_5789' width='90' height='90' xlink:href='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFoAAABaCAYAAAA4qEECAAAACXBIWXMAAAsTAAALEwEAmpwYAAAEpklEQVR4nO2cy2uVRxTAfxG8mocL3+22SF20WNBWq0TqovgAi7Z/h2myq7oSEdqNjxjdiqRV20ARBYuIaCs+qutWu6mt4iMmJpsu1EiNDJwLIdwz97tJ7jdzJvODs7n38n3nnDvfmTNnznyQyWQymUwmk8lkMpmatANbgD3ASeB34G9gFHglMiqf3ZLfuN9uBtpqXzJTZRnQA1wTR45PUV7JNbrlmhlhI3AOeD0N52oyJtfuZBbzGfBbE5yrya/yp84a3gH6gTclOnmiDADLSZyvZBIbDyyjwE4SZAL0NjiKnwCngC7JJlYAC4G5IgvlM/fd1/Lbpw1c3+lyWK6VBB3ApYLGDwFHgDXTuN+/8qcOF7znRdHRNIuBOwWMfQDsAlpn8N6t8jQ8LHD/26KrSdyC4WaB9Ku3ySPKOXwf8LKOLncsjuxKgXDxJ/BBiTp9CNwtEEZMxezeOgadCbRUbpf0zqfbIYzwRZ3s4hgwJ6B+LcDBOtnIlxhYjPjy5KPEQ59Hz5HY6yTf1wkXIUfyZObUCSOuIhht7UILGX9EWr7cAC55wkSUxajtQPSy5OyiUVZ5yrJXiIz1nkdwP/HzrUf/qEb1Oc+KbyZXe81M+x4pNpwlEpbJCq+Wkm5ZbYUez+p1KRErOGRkNFdp8xSiXM0kONcU5VwVzhpHFVuuxhDbtBl7Nfb4xJM5BX06N3uK9hZpAQYVmz4PqdheRakfsMsZxaZvQip1MubJY4p0KzadICC3FKVcSLHKVsWmGyGV+kdR6j3sskKx6X5IpUYUpRZhl8WKTS7HDoaW2rmtLKtUPCleMFJ09DzFJk93ZFbZIEfMtM2D6cib1JKLljqTdzZSW+iSgzmN5LyT5bWM3l1T3BmZFc6u0ipnRnZLp/1NeT3miNSOx6R49a90EPVL38WmGSrHFnH2L6k4OzRJT5CxkZ1dsrPP55FdDtnZJZKdXSLZ2SUyT1K7nPpF4myLb3cw6ez/jPaIm3P2i8j6WJJ1dtBD+ik7+4iEixfiZHNv7rWEi8k5LmcymUwmk8lkMjSXt3T0WpJdSawcAAAAASUVORK5CYII='/%3E%3C/defs%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    font-size: 12px;
+    font-family: var(--themeFont);
+    height: 30px;
+    padding: 4px 32px 4px 12px;
+}
+
+.chat-queries-wrapper > ul > li.chat-history-data-heading {
+    border-bottom: 0;
+    color: var(--mediumDark);
+    font-size: 11px;
+    font-family: var(--themeFont);
+    padding: 10px;
+    margin-top: 20px;
+}
+
+.chat-queries-wrapper > ul > li.chat-history-data-heading:first-child {
+    margin-top: 0;
+}
+
+.chat-queries-wrapper > ul {
+    padding: 0;
+    margin: 0;
+    list-style: none;
+}
+
+.chat-queries-wrapper > ul > li {
+    border-bottom: 1px solid var(--grey);
+}
+
+.chat-queries-wrapper > ul > li > .history-title-wrapper {
+    border-left: 3px solid transparent;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px;
+    position: relative;
+}
+
+.chat-queries-wrapper > ul > li > .history-title-wrapper.active {
+    background: var(--smokeWhite);
+    border-color: var(--red);
+}
+
+.action-wrapper {
+    cursor: pointer;
+    padding: 0 5px;
+}
+
+.chat-queries-wrapper .chat-history-dropdown {
+    background: var(--white);
+    border: 1px solid var(--grey);
+    border-radius: 5px;
+    box-shadow: 0px 4px 10px 0px rgba(0, 0, 0, .3);
+    min-width: 100px;
+    max-width: 150px;
+    padding: 2px 0;
+    position: absolute !important;
+    top: 0 !important;
+    right: 0 !important;
+}
+
+.chat-queries-wrapper .chat-history-dropdown li {
+    background-color: var(--white);
+    cursor: pointer;
+    font-size: 12px;
+    font-family: var(--themeFontSlim);
+    padding: 5px;
+}
+
+.chat-queries-wrapper .chat-history-dropdown li:hover {
+    background-color: var(--lightGrey);
+}
+
+.history-edit-input-wrapper {
+    background-color: var(--light);
+    border-left: 2px solid var(--red);
+    width: 100%;
+    padding: 8px;
+    position: absolute;
+    z-index: 1;
+}
+
+.history-edit-input-wrapper > input {
+    box-shadow: 0px 0px 2px 0px rgba(0, 0, 0, .3);
+    border-radius: 4px;
+    border: 0;
+    font-size: 12px;
+    font-family: var(--themeFont);
+    height: 30px;
+    padding: 8px 50px 8px 8px;
+}
+
+.editHistoryActionWrapper {
+    background-color: var(--white);
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    position: absolute;
+    top: 9px;
+    right: 10px;
+}
+
+.editHistoryActionWrapper > div {
+    cursor: pointer;
+    padding: 4px;
+}
+
+.history-title-wrapper > span {
+    font-family: var(--themeFontBold);
+    font-size: 12px;
+}
+
+.history-action-wrapper {
+    display: flex;
+    align-items: center;
+}
+
+.history-action-wrapper > span {
+    color: var(--mediumDark);
+    font-size: 10px
