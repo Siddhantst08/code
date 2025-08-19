@@ -1,442 +1,360 @@
-import { Component, OnInit, Output, EventEmitter, ElementRef, Renderer2, Input, OnChanges, SimpleChanges, OnDestroy, ViewChild, AfterViewInit } from '@angular/core';
-//import { BotHistoryService } from './bot-history.service';
-import { HttpService } from 'src/app/core/services/http.service';
-import { deleteQuery, updateQuery, queryActionButtons } from '../generative-ai-chatbot-history/generative-ai-chatbot-history.model';
-import { MessageService } from 'primeng/api';
-//import { GlobalConfig} from 'src/app/global/global.config';
-import { ConfirmationService } from 'primeng/api';
-import { FormControl } from '@angular/forms';
-import { Subscription } from 'rxjs';
-import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
-import { ApiConfig } from 'src/app/core/config/api-config';
+  async listAllUsableFlows(
+    skip: number = 0,
+    limit: number = 10,
+    userId: string,
+    isAdminScreen: boolean,
+    searchTerm?: string,
+    categoryId?: string,
+    sortField?: string,
+    sortOrder?: SortOrder
+  ): Promise<{
+    message: string;
+    usableFlows: UsableFlowWithCreatorName[];
+    total: number;
+    pageViewTotal: number;
+    totalCountWithoutPagination: number;
+    latestUpdatedTemplateName: string | null;
+    counts: {
+      publishedCount: number;
+      inDevelopmentCount: number;
+      activeCount: number;
+      inActiveCount: number;
+    };
+    categoryCounts: Record<string, { statuses: Record<string, number> }>;
+  }> {
+    const connection = getConnection();
 
-@Component({
-  selector: 'app-generative-ai-chatbot-history',
-  templateUrl: './generative-ai-chatbot-history.component.html',
-  styleUrls: ['./generative-ai-chatbot-history.component.css'],
-  providers: [ConfirmationService]
-})
-export class GenerativeAiChatbotHistoryComponent implements OnInit,OnChanges, AfterViewInit, OnDestroy {
+    const isAdmin: boolean = String(isAdminScreen).toLowerCase() === "true";
+    const userDetails = await connection
+      .createQueryBuilder(User, "userDetails")
+      .where("userDetails.id = :userId", { userId })
+      .getOne();
 
-    @Output() loadMoreData = new EventEmitter();
-    @Output() closeBotHistorypanel = new EventEmitter();
-    @Output() chatHistoryData = new EventEmitter();
-    @Output() getChatHistoryLabels = new EventEmitter();
-    @Output() sendSaveData = new EventEmitter();
-    @Output() searchQueries = new EventEmitter();
-    @Output() deleteData = new EventEmitter();
-    @Output() downloadData = new EventEmitter();
-  
-    @Input() chatHistoryLabelsData: any[];
-    @Input() totalRecords;
-    @Input() chatBotConfigurations: any;
-    @Input() chatHistoryLoading: boolean;
-    @Input() disableChatHistoryClick: boolean;
-    @Input() blankSearchInput:boolean;
-    @Input() botSessionId: string;
-    currentConfigurations: {};
-    historyActionButtons: queryActionButtons[];
-    pageNo: number = 2;
-  
-    queryEditId: number;
-    newQueryTitle: string;
-    closeHistoryBlock: boolean = true;
-    categorizedData = {
-      today: [],
-      yesterday: [],
-      previous7Days: [],
-      previous30Days: []
-    };
-    updateQuery:updateQuery = {
-      Id: '',
-      Query: ''
-    };
-    deleteQuery:deleteQuery = {
-      Id: ''
-    };
-  
-    querySplitLength: number;
-    chatHistorySearchBarPlaceholderText: string;
-    querySaveErrorMessage: string;
-    queryDeleteErrorMessage: string;
-    inputFieldValidationMessage: string;
-    chatHistoryDateFormat: string;
-    searchTriggerMinCharLimit: number;
-    noRecordFoundMessageText: string;
-    loadMoreButtonText: string;
-    windowTitleMessage: string;
-    chatHistoryClickDisabled: string;
-    checkDropdownItem: boolean;
-    queryRenameSuccessMessage: string;
-    queryDeleteSuccessMessage: string;
-    queryDeleteConfirmationMessage: string;
-    queryDeleteConfirmationHeaderMessage: string;
-    allThreadListView: boolean;
-    allThreadListViewTitleMessage: string;
-    currentChatData:any[] = [];
-    selectedIndex: number = -1;
-    showDisclaimerWindow: boolean = true;
-    @ViewChild('disclaimerWindow') disclaimerWindow: ElementRef;
-    disclaimerWindowHeight: number;
-    searchVisible: boolean;
-    chatQueriesWrapperHeight: string;
-    disclaimerText: string;
-    searchControl = new FormControl('');
-    searchCtrlSub: Subscription;
-     action: queryActionButtons;
-     isChatHistoryDisabled:boolean;
-     showTooltip:boolean;
-     inputQueryBoxCharacterLimit:number;
-     chatHistoryEditFieldCharacterLimitValidationMessage:any;
-    constructor(private service: HttpService, private element: ElementRef,
-      private renderer: Renderer2, private messageService: MessageService,
-      private confirmationService: ConfirmationService) {
-      this.searchCtrlSub = this.searchControl.valueChanges.pipe(
-        debounceTime(400),
-        distinctUntilChanged((prev, curr)=> {
-          const value = curr.trim();
-          return value && prev.trim() === value
-        })
-      ).subscribe(newValue =>
-        this.onSearch(newValue)
-      );
+    if (!userDetails) {
+      logger.error("User not found with ID: {}", userId);
+      throw new APIError("User not found", 404);
     }
-  
-    ngOnDestroy(): void {
-      this.searchCtrlSub.unsubscribe()
+
+    const isSuperAdmin = userDetails.is_superuser;
+    const currentUserMail = userDetails.email;
+
+    const queryBuilder = await connection
+      .createQueryBuilder(UsableFlow, "usableFlow")
+      .leftJoin(
+        UsableFlowAccess,
+        "access",
+        "access.usableFlowId = usableFlow.id AND access.emails = :email",
+        { email: currentUserMail }
+      )
+      .leftJoinAndMapOne(
+        "usableFlow.flow",
+        Flow,
+        "flow",
+        "flow.id = usableFlow.flowId"
+      )
+      .select([
+        "usableFlow.id",
+        "usableFlow.flowId",
+        "usableFlow.requireFile",
+        "usableFlow.supportMultipleFiles",
+        "usableFlow.supportedFileTypesIds",
+        "usableFlow.createdBy",
+        "usableFlow.lastUpdatedBy",
+        "usableFlow.createdAt",
+        "usableFlow.updatedAt",
+        "usableFlow.isDeleted",
+        "usableFlow.isActive",
+        "usableFlow.description",
+        "usableFlow.category",
+        "usableFlow.tools",
+        "usableFlow.status",
+        "usableFlow.templateName",
+        "usableFlow.chargeCode",
+        "usableFlow.access",
+        "usableFlow.iconBlobUrl",
+      ])
+      .addSelect("flow.name")
+      .where("usableFlow.isDeleted = false");
+
+    if (!isAdmin) {
+      queryBuilder
+        .andWhere("usableFlow.isActive = true")
+        .andWhere("usableFlow.status = :publishedStatus", {
+          publishedStatus: UsableFlowStatus.Published,
+        });
     }
-  
-    ngOnChanges(changes: SimpleChanges): void {
-      
-      let chatBotConfigurations = changes['chatBotConfigurations'];
-      if (chatBotConfigurations != undefined && chatBotConfigurations.currentValue != undefined && chatBotConfigurations.currentValue != "") {
-        if(chatBotConfigurations.currentValue ) {
-          this.currentConfigurations = chatBotConfigurations.currentValue;
-          this.historyActionButtons = chatBotConfigurations.currentValue.historyActionButtons ? chatBotConfigurations.currentValue.historyActionButtons : this.historyActionButtons;
-          this.checkDropdownButtonVisibility(this.historyActionButtons);
-          this.chatHistorySearchBarPlaceholderText = chatBotConfigurations.currentValue.chatHistorySearchBarPlaceholderText ? chatBotConfigurations.currentValue.chatHistorySearchBarPlaceholderText : 'Search your threads...';
-          // Chat History Strip Length
-          let stripLength = chatBotConfigurations.currentValue.chatHistoryQuerySplitLength;
-          if(stripLength > 0 && stripLength != null && stripLength != undefined) {
-            this.querySplitLength = stripLength;
-          } else {
-            this.querySplitLength = 25;
-          }
-  
-          // Chat History Input Validation
-          this.querySaveErrorMessage = chatBotConfigurations.currentValue.chatHistoryQuerySaveErrorMessage ? chatBotConfigurations.currentValue.chatHistoryQuerySaveErrorMessage : 'Error while saving your query';
-          this.queryDeleteErrorMessage = chatBotConfigurations.currentValue.chatHistoryQueryDeleteErrorMessage ? chatBotConfigurations.currentValue.chatHistoryQueryDeleteErrorMessage : 'Error while deleting your query';
-          this.inputFieldValidationMessage = chatBotConfigurations.currentValue.chatHistoryInputFieldValidationMessage ? chatBotConfigurations.currentValue.chatHistoryInputFieldValidationMessage : 'Input should not be blank';
-          this.chatHistoryDateFormat = chatBotConfigurations.currentValue.chatHistoryDateFormat ? chatBotConfigurations.currentValue.chatHistoryDateFormat : 'dd MMM';
-          this.noRecordFoundMessageText = chatBotConfigurations.currentValue.chatHistoryNoRecordFoundMessage ? chatBotConfigurations.currentValue.chatHistoryNoRecordFoundMessage : 'No Chat History Data Found';
-          this.searchTriggerMinCharLimit = chatBotConfigurations.currentValue.chatHistorySearchTriggerMinCharLimit ? chatBotConfigurations.currentValue.chatHistorySearchTriggerMinCharLimit : 2;
-          this.loadMoreButtonText = chatBotConfigurations.currentValue.chatHistoryLoadMoreButtonText ? chatBotConfigurations.currentValue.chatHistoryLoadMoreButtonText : 'Load more chats';
-          this.windowTitleMessage = chatBotConfigurations.currentValue.chatHistoryWindowTitleMessage ? chatBotConfigurations.currentValue.chatHistoryWindowTitleMessage : 'Chat History';
-          this.chatHistoryClickDisabled = chatBotConfigurations.currentValue.chatHistoryClickDisabledMessage ? chatBotConfigurations.currentValue.chatHistoryClickDisabledMessage : 'Click disabled while loading response';
-          this.queryRenameSuccessMessage = chatBotConfigurations.currentValue.chatHistoryQueryRenameSuccessMessage ? chatBotConfigurations.currentValue.chatHistoryQueryRenameSuccessMessage : 'Query Renamed Successfully';
-          this.queryDeleteSuccessMessage = chatBotConfigurations.currentValue.chatHistoryQueryDeleteSuccessMessage ? chatBotConfigurations.currentValue.chatHistoryQueryDeleteSuccessMessage : 'Query Deleted SuccessFully';
-          this.queryDeleteConfirmationMessage = chatBotConfigurations.currentValue.chatHistoryQueryDeleteConfirmationMessage ? chatBotConfigurations.currentValue.chatHistoryQueryDeleteConfirmationMessage : 'Do you want to delete query title ?'
-          this.queryDeleteConfirmationHeaderMessage = chatBotConfigurations.currentValue.chatHistoryQueryDeleteHeaderMessage ? chatBotConfigurations.currentValue.chatHistoryQueryDeleteHeaderMessage : 'Chat History Delete Confirmation';
-          this.allThreadListView = chatBotConfigurations.currentValue.chatHistoryAllThreadListView;
-          this.allThreadListViewTitleMessage = chatBotConfigurations.currentValue.chatHistoryAllThreadListViewTitleMessage ? chatBotConfigurations.currentValue.chatHistoryAllThreadListViewTitleMessage : 'Previous 7 Days';
-          this.showDisclaimerWindow = chatBotConfigurations.currentValue.chatHistoryshowDisclaimerWindow;
-          this.searchVisible = chatBotConfigurations.currentValue.chatHistorySearchVisible;
-          this.disclaimerText = chatBotConfigurations.currentValue.chatHistoryDisclaimerText ? chatBotConfigurations.currentValue.chatHistoryDisclaimerText : "Filters are applied to new messages only. Historical messages may not reflect the current filter settings.";
-          this.showTooltip=chatBotConfigurations.currentValue.showTooltip? chatBotConfigurations.currentValue.showTooltip: false;
-          this.inputQueryBoxCharacterLimit=chatBotConfigurations.currentValue.inputQueryBoxCharacterLimit;
-          this.chatHistoryEditFieldCharacterLimitValidationMessage=chatBotConfigurations.currentValue.chatHistoryEditFieldCharacterLimitValidationMessage;
+
+    queryBuilder.andWhere(
+      new Brackets((qb) => {
+        if (!isSuperAdmin) {
+          qb.where("usableFlow.access = :publicAccess", {
+            publicAccess: "public",
+          }).orWhere(
+            new Brackets((qb2) => {
+              qb2
+                .where("usableFlow.access = :specificAccess", {
+                  specificAccess: "specific",
+                })
+                .andWhere("access.id IS NOT NULL");
+            })
+          );
         }
-      }
-      let chatData = changes['chatHistoryLabelsData'];
-      if(chatData != undefined && chatData.currentValue != undefined) {
-        this.currentChatData = chatData.currentValue;
-        this.currentChatData.map((item)=>{
-          item.localTime = this.convertToLocalTime(item.created)
-        })
-        this.convertAndCategorizeData();
-        
-      }
-  
-      let botSessionId = changes['botSessionId'];
-      if(botSessionId != undefined && botSessionId.currentValue != undefined) {
-        this.selectedIndex = botSessionId.currentValue;
-      }
-      this.isChatHistoryDisabled=this.blankSearchInput;
-    }
-    checkDropdownButtonVisibility(historyActionButtons: queryActionButtons[]) {
-      if(historyActionButtons && historyActionButtons.length > 0){
-        this.checkDropdownItem = historyActionButtons.some(item => item.isVisible);
-      }
-    }
-  
-    ngOnInit(): void {}
-  
-    ngAfterViewInit() {
-      this.updateDisclaimerWindowHeight();
-      setTimeout(() => {
-        this.updateHeight();
-      }, 0);
-      
-    }
-  
-    updateDisclaimerWindowHeight() {
-      if(this.disclaimerWindow) {
-        this.disclaimerWindowHeight = this.disclaimerWindow.nativeElement.offsetHeight;
-      }
-    }
-  
-    updateHeight() {
-      if(this.searchVisible && this.showDisclaimerWindow) {
-        if(this.disclaimerWindowHeight) {
-          this.chatQueriesWrapperHeight = `calc(100vh - 100px - ${this.disclaimerWindowHeight}px)`; // added 15 bcz we have added margin of 15px
-        } else {
-          this.chatQueriesWrapperHeight = `calc(100vh - 160px - 56px)`;
-        }
-      } else if(!this.searchVisible && this.showDisclaimerWindow) {
-          if(this.disclaimerWindowHeight) {
-            this.chatQueriesWrapperHeight = `calc(100vh - 42px - ${this.disclaimerWindowHeight}px)`
-          } else {
-            this.chatQueriesWrapperHeight = `calc(100vh - 42px - 56px)`;
-          }
-      } else if(this.searchVisible && !this.showDisclaimerWindow) {
-        this.chatQueriesWrapperHeight = `calc(100vh - 92px)`;
-      } else {
-        this.chatQueriesWrapperHeight = `calc(100vh - 42px)`;
-      }
-    }
-  
-  
-  
-    convertToLocalTime(gmtDateString: string): string {
-      const gmtDate = new Date(gmtDateString);
-      const localDate = new Date(gmtDate.getTime() - (gmtDate.getTimezoneOffset() * 60000));
-      
-      const options: Intl.DateTimeFormatOptions = {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false
-      };
-      return new Intl.DateTimeFormat('en-US', options).format(localDate);
-    }
-  
-    
-  
-    convertAndCategorizeData() {
-      // Get Current Date
-      const now = new Date();
-  
-      // Get Today
-      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  
-      // Get Yesterday
-      const yesterday = new Date(today);
-      yesterday.setDate(today.getDate() - 1);
-  
-      // Get Lastweek
-      const lastWeek = new Date(today);
-      lastWeek.setDate(today.getDate() - 7);
-      
-      // Get Last Month
-      const lastMonth = new Date(today);
-      lastMonth.setDate(today.getDate() - 30);
-      this.categorizedData = {
-        today: [],
-        yesterday: [],
-        previous7Days: [],
-        previous30Days: []
-      };
-      this.currentChatData.forEach(item => {
-        // Convert the item.created from GMT to local timezone
-        const localTimestamp = new Date(item.localTime);
-        if(this.allThreadListView == false) {
-          if (localTimestamp >= today) {
-            this.categorizedData.today.push({ ...item, localTimestamp });
-          } 
-          else if (localTimestamp >= yesterday && localTimestamp < today) {
-            this.categorizedData.yesterday.push({ ...item, localTimestamp });
-          }else{
-            this.categorizedData.previous7Days.push({ ...item, localTimestamp });
-          } 
-          /*else if (localTimestamp >= lastWeek && localTimestamp < yesterday) {
-            this.categorizedData.previous7Days.push({ ...item, localTimestamp });
-          } 
-          else {
-            this.categorizedData.previous30Days.push({ ...item, localTimestamp });
-          }*/
-        } else {
-          item.localTimestamp = localTimestamp;
-        }
-        
+      })
+    );
+
+    // 🔍 Add search condition if searchTerm is provided
+    if (searchTerm && searchTerm.length > 0) {
+      const sanitized = sanitizeSafeText(searchTerm);
+      queryBuilder.andWhere("usableFlow.templateName ILIKE :searchTerm", {
+        searchTerm: `%${sanitized}%`,
       });
     }
-  
-    closeBotHistory(data) {
-      this.closeBotHistorypanel.emit(data);
+
+    // Apply sorting BEFORE executing any queries
+    const allowedExecutionSortFields = ["templateName", "updatedAt"];
+    if (
+      sortField &&
+      sortOrder &&
+      allowedExecutionSortFields.includes(sortField) &&
+      [SortOrder.asc, SortOrder.desc].includes(sortOrder)
+    ) {
+      logger.info(
+        `Applied custom sorting on usableFlow with 'usableFlow.${sortField} ${sortOrder}'`
+      );
+      queryBuilder.orderBy(`usableFlow.${sortField}`, sortOrder);
+    } else {
+      queryBuilder.orderBy("usableFlow.updatedAt", "DESC");
     }
-  
-    handleClick(action, history) {
-      if(action.isVisible == true) {
-        let actionTitle = action.title.toLowerCase();
-        switch(actionTitle) {
-          case 'rename':
-            this.renameQuery(history);
-            break;
-          case 'delete':
-            this.onHistoryDelete(history.id);
-            break;
-            case 'download':
-              this.onDownloadHistory(history);
-              break;
-        }
-      }
+
+    // ✅ Always apply pagination
+    queryBuilder.skip(skip).take(limit);
+
+    // Create a separate query builder for count operations
+    const countQueryBuilder = connection
+      .createQueryBuilder(UsableFlow, "usableFlow")
+      .leftJoin(
+        UsableFlowAccess,
+        "access",
+        "access.usableFlowId = usableFlow.id AND access.emails = :email",
+        { email: currentUserMail }
+      )
+      .where("usableFlow.isDeleted = false");
+
+    // Apply the same conditions to count query
+    if (!isAdmin) {
+      countQueryBuilder
+        .andWhere("usableFlow.isActive = true")
+        .andWhere("usableFlow.status = :publishedStatus", {
+          publishedStatus: UsableFlowStatus.Published,
+        });
     }
-    
-    renameQuery(data) {
-      this.closeHistoryBlock = true;
-      this.queryEditId = data.id;
-      if(data) {
-        this.newQueryTitle = data.query;
-      }
-    }
-  
-    onDownloadHistory(history){
-      this.downloadData.emit(history)
-    }
-    
-    saveEditQuery(Query:string,Id:string ) {
-      this.chatHistoryLoading = true;
-      if(Query.trim() == '' || Query == undefined || Query == null) {
-        this.showWarn('warn', 'Warning', this.inputFieldValidationMessage)
-      }else if(Query.length > this.inputQueryBoxCharacterLimit){
-        this.showWarn('warn', 'Warning', this.chatHistoryEditFieldCharacterLimitValidationMessage)
-      }
-       else {
-      this.updateQuery.Id = Id;   
-      this.updateQuery.Query = Query.trim();
-      if(this.updateQuery && this.updateQuery.Id != null && this.updateQuery.Query != undefined) {
-        let model: any = {
-          sessionId: Id,
-          query: Query.trim(),
-        };
-        let api: any = ApiConfig.updateChatBotHistoryDataApi;
-        this.service.post(api,model).subscribe(res => {
-          if(res.result) {
-            this.showWarn('success', 'Success', this.queryRenameSuccessMessage);
-            this.chatHistoryLoading = false;
-            this.sendSaveData.emit(this.updateQuery);
-            this.queryEditId = null;
-            this.newQueryTitle = '';
-          } else {
-            this.showWarn('error', 'Error', this.querySaveErrorMessage)
-            this.chatHistoryLoading = false;
-          }
-        })
-      } else {
-        this.showWarn('error', 'Error', this.querySaveErrorMessage)
-         this.chatHistoryLoading = false;
-      }
-      }
-    }
-  
-    onHistoryDelete(Id:string) {
-      this.deleteQuery.Id = Id;  
-      if(this.deleteQuery && this.deleteQuery.Id != null) {
-        this.confirmationService.confirm({
-          message: this.queryDeleteConfirmationMessage,
-          accept: () => {
-            this.chatHistoryLoading = true;
-            let api: any = ApiConfig.updateChatBotHistoryDataApi;
-            let model: any = {
-              sessionId: Id,
-              query: null,
-            };
-            this.service.post(api, model).subscribe(res => {
-              if(res.result) {
-                this.showWarn('success', 'Success', this.queryDeleteSuccessMessage);
-                this.deleteData.emit(this.deleteQuery);
-              } else {
-                this.showWarn('error', 'Error', this.queryDeleteErrorMessage);
-                this.chatHistoryLoading = false;
-              }
+
+    countQueryBuilder.andWhere(
+      new Brackets((qb) => {
+        if (!isSuperAdmin) {
+          qb.where("usableFlow.access = :publicAccess", {
+            publicAccess: "public",
+          }).orWhere(
+            new Brackets((qb2) => {
+              qb2
+                .where("usableFlow.access = :specificAccess", {
+                  specificAccess: "specific",
+                })
+                .andWhere("access.id IS NOT NULL");
             })
-          },
-          reject: () => {
-            this.chatHistoryLoading = false;
-          }
-        })
-      } else {
-        this.showWarn('error', 'Error', this.queryDeleteErrorMessage);
-        this.chatHistoryLoading = false;
-      }
-    }
-  
-    showWarn(severity: string, summary: string, warningMessage: string) {
-      this.messageService.clear();
-      this.messageService.add({ 
-        severity: severity, 
-        summary: summary, 
-        detail: warningMessage, 
-        key: 'br',
-        styleClass: `bot-history-toast-${severity}`
-       });
-      this.chatHistoryLoading = false;
-    }
-  
-    showChatHistory(historydata){
-      if(this.disableChatHistoryClick == false) {
-        this.chatHistoryData.emit(historydata);
-      } else {
-        this.showWarn('warn', 'Warning', this.chatHistoryClickDisabled);
-      }
-    }
-  
-    adjustDropdownPosition(event: MouseEvent) {
-      setTimeout(()=> {
-        const button = event.target as HTMLElement;
-        const dropdown = button.nextElementSibling as HTMLElement;
-        if(dropdown) {
-          this.renderer.setStyle(dropdown, 'top', `90%`);
-          this.renderer.setStyle(dropdown, 'bottom', `auto`);
-          const wrapperHeight = this.element.nativeElement.querySelector('.chat-history-panel');
-          const dropdownRect = dropdown.getBoundingClientRect();
-          const windowHeight = wrapperHeight.offsetHeight;
-          if (dropdownRect.bottom > windowHeight) {
-            this.renderer.setStyle(dropdown, 'bottom', `40px`);
-            this.renderer.setStyle(dropdown, 'top', `auto`);
-          } else {
-            this.renderer.setStyle(dropdown, 'top', `90%`);
-            this.renderer.setStyle(dropdown, 'bottom', `auto`);
-          }
+          );
         }
-      },5)
-      
+      })
+    );
+
+    if (searchTerm && searchTerm.length > 0) {
+      const sanitized = sanitizeSafeText(searchTerm);
+      countQueryBuilder.andWhere("usableFlow.templateName ILIKE :searchTerm", {
+        searchTerm: `%${sanitized}%`,
+      });
     }
-  
-    loadMoreChats() {
-      this.loadMoreData.emit(this.pageNo);
-      this.pageNo++;
+
+    let totalCountWithoutPagination = 0;
+    if (!isAdmin) {
+      totalCountWithoutPagination = await countQueryBuilder.getCount();
     }
-  
-    onSearch(query:string) {
-      const trimmedQuery = query.trim();
-      if(trimmedQuery.length && trimmedQuery.length != null && trimmedQuery.length >= this.searchTriggerMinCharLimit) {
-        this.searchQueries.emit(query.trim());
-      } else if(query.length === 0) {
-        this.searchQueries.emit('');
-        this.pageNo =2;
+
+    // Now run the count query
+    const countResults = (await countQueryBuilder
+      .select([
+        `COALESCE(SUM(CASE WHEN usableFlow.status = '${UsableFlowStatus.Published}' THEN 1 ELSE 0 END), 0) as "publishedCount"`,
+        `COALESCE(SUM(CASE WHEN usableFlow.status = '${UsableFlowStatus.InDevelopment}' THEN 1 ELSE 0 END), 0) as "inDevelopmentCount"`,
+        `COALESCE(SUM(CASE WHEN usableFlow.isActive = true THEN 1 ELSE 0 END), 0) AS "activeCount"`,
+        `COALESCE(SUM(CASE WHEN usableFlow.isActive = false THEN 1 ELSE 0 END), 0) AS "inActiveCount"`,
+        `COALESCE(SUM(CASE WHEN usableFlow.status = '${UsableFlowStatus.Published}' AND usableFlow.isActive = true THEN 1 ELSE 0 END), 0) AS "activePublishedCount"`,
+      ])
+      .getRawOne()) || {
+      publishedCount: 0,
+      inDevelopmentCount: 0,
+      activeCount: 0,
+      inActiveCount: 0,
+      activePublishedCount: 0,
+    };
+
+    // Add totalCount if user is admin
+    if (isAdmin) {
+      countResults.totalCount =
+        parseInt(countResults.publishedCount) +
+        parseInt(countResults.inDevelopmentCount);
+    }
+
+    const categoryCountRaw = await countQueryBuilder
+      .select(`unnest("usableFlow"."category")`, "category_id")
+      .addSelect(`"usableFlow"."status"`, "status")
+      .addSelect("COUNT(*)", "count")
+      .groupBy(`category_id, "usableFlow"."status"`)
+      .getRawMany();
+
+    const categoryCountMap: Record<
+      string,
+      { statuses: Record<string, number> }
+    > = {};
+
+    categoryCountRaw.forEach((row: any) => {
+      const categoryId = row.category_id;
+      const status = row.status;
+      const count = parseInt(row.count);
+
+      if (!categoryCountMap[categoryId]) {
+        categoryCountMap[categoryId] = {
+          statuses: {},
+        };
       }
+      categoryCountMap[categoryId].statuses[status] =
+        (categoryCountMap[categoryId].statuses[status] || 0) + count;
+    });
+
+    // THEN apply category filter if needed
+    if (categoryId) {
+      queryBuilder.andWhere(":categoryId = ANY(usableFlow.category)", {
+        categoryId,
+      });
+      countQueryBuilder.andWhere(":categoryId = ANY(usableFlow.category)", {
+        categoryId,
+      });
     }
-  
-    closeDisclaimerWindow() {
-      this.showDisclaimerWindow = false;
-      this.updateHeight();
+
+    // Fetch usable flows using the main query builder
+    let usableFlows: CustomUsableFlow[] = await queryBuilder.getMany();
+
+    usableFlows = usableFlows.map(({ flow, ...rest }) => ({
+      ...rest,
+      name: flow?.name ?? null,
+    }));
+
+    const flowIds: string[] = usableFlows.map((flow) => flow.id);
+
+    let executionCounts = [];
+
+    if (flowIds.length > 0) {
+      executionCounts = await connection
+        .createQueryBuilder(Execution, "execution")
+        .select("COUNT(execution.id)", "count")
+        .addSelect("execution.usableFlowId", "usableFlowId")
+        .where("execution.usableFlowId IN (:...flowIds)", { flowIds })
+        .groupBy("execution.usableFlowId")
+        .getRawMany();
     }
-     
-    clearSearch(){
-      this.searchControl.setValue('')
+
+    for (const flow of usableFlows) {
+      const countData = executionCounts.find(
+        (ec) => ec.usableFlowId === flow.id
+      );
+      flow.executionCount = countData ? parseInt(countData.count) : 0;
     }
+
+    // fetch corresponding names for createdBy and lastUpdatedBy from user table and flow description from flow table
+    const usableFlowsWithUserNames = await Promise.all(
+      usableFlows.map(async (flow: UsableFlow) => {
+        const createdByUser = await connection
+          .createQueryBuilder(User, "user")
+          .select(["user.username"])
+          .where("user.id = :id", { id: flow.createdBy })
+          .getOne();
+
+        const lastUpdatedByUser = await connection
+          .createQueryBuilder(User, "user")
+          .select(["user.first_name", "user.last_name"])
+          .where("user.id = :id", { id: flow.lastUpdatedBy })
+          .getOne();
+
+        const categoryNames =
+          flow.category.length > 0
+            ? await connection
+                .createQueryBuilder(UsableFlowCategory, "category")
+                .select(["category.name"])
+                .where("category.id IN (:...ids)", { ids: flow.category })
+                .getMany()
+            : [];
+
+        const toolNames =
+          flow.tools.length > 0
+            ? await connection
+                .createQueryBuilder(UsableFlowTools, "tools")
+                .select(["tools.name"])
+                .where("tools.id IN (:...ids)", { ids: flow.tools })
+                .getMany()
+            : [];
+
+        const getFullName = (user: User | null) => {
+          if (!user) return "Unknown";
+          const firstName = capitalizeFirstChar(user.first_name?.trim() ?? "");
+          const lastName = capitalizeFirstChar(user.last_name?.trim() ?? "");
+          return `${firstName} ${lastName}`.trim();
+        };
+
+        return {
+          ...flow,
+          creator: createdByUser?.username || "Unknown",
+          updater: getFullName(lastUpdatedByUser) || "Unknown",
+          updatedAt: flow.updatedAt || flow.createdAt,
+          isDeleted: flow.isDeleted ?? false, // Default to false if not set
+          isActive: flow.isActive ?? true, // Default
+          description: flow.description || "No description available",
+          categoryNames: categoryNames.map(
+            (category: UsableFlowCategory) => category.name
+          ),
+          toolNames: toolNames.map((tool: UsableFlowTools) => tool.name),
+          status: flow.status,
+          templateName: flow.templateName,
+          ChargeCodeStatus: flow.chargeCode,
+        };
+      })
+    );
+
+    const latestFlow = await connection
+      .getRepository(UsableFlow)
+      .createQueryBuilder("uf")
+      .select(["uf.templateName"])
+      .where("uf.isDeleted = false")
+      .orderBy("uf.updatedAt", "DESC")
+      .limit(1)
+      .getOne();
+
+    const latestUpdatedTemplateName = latestFlow?.templateName ?? null;
+    let total = countResults.activePublishedCount;
+    if (isAdmin) {
+      total = countResults.totalCount;
+    }
+
+    return {
+      message: parseInt(total) > 0 ? "Success" : "No records found",
+      usableFlows: usableFlowsWithUserNames,
+      total: parseInt(total),
+      categoryCounts: categoryCountMap,
+      latestUpdatedTemplateName,
+      pageViewTotal: usableFlowsWithUserNames.length,
+      totalCountWithoutPagination: totalCountWithoutPagination,
+      counts: {
+        publishedCount: parseInt(countResults.publishedCount),
+        inDevelopmentCount: parseInt(countResults.inDevelopmentCount),
+        activeCount: parseInt(countResults.activeCount),
+        inActiveCount: parseInt(countResults.inActiveCount),
+      },
+    };
   }
-  
