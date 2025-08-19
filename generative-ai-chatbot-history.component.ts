@@ -1,9 +1,14 @@
-class UsableFlowsResponse(BaseModel):
-    message: str
-    usableFlows: List[UsableFlowWithCreatorName]
-    total: int
-    pageViewTotal: int
-    totalCountWithoutPagination: int
-    latestUpdatedTemplateName: Optional[str]
-    counts: Counts
-    categoryCounts: Dict[str, Any]
+
+class UsableFlowWithCreatorName(BaseModel):
+    id: str
+    flowId: str
+    templateName: str
+    description: Optional[str]
+    creator: str
+    updater: str
+    executionCount: int
+    categoryNames: List[str]
+    toolNames: List[str]
+    status: str
+    isActive: bool
+    isDeleted: bool
