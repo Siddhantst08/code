@@ -1,37 +1,42 @@
-const queryBuilder = await connection
-      .createQueryBuilder(UsableFlow, "usableFlow")
-      .leftJoin(
-        UsableFlowAccess,
-        "access",
-        "access.usableFlowId = usableFlow.id AND access.emails = :email",
-        { email: currentUserMail }
-      )
-      .leftJoinAndMapOne(
-        "usableFlow.flow",
-        Flow,
-        "flow",
-        "flow.id = usableFlow.flowId"
-      )
-      .select([
-        "usableFlow.id",
-        "usableFlow.flowId",
-        "usableFlow.requireFile",
-        "usableFlow.supportMultipleFiles",
-        "usableFlow.supportedFileTypesIds",
-        "usableFlow.createdBy",
-        "usableFlow.lastUpdatedBy",
-        "usableFlow.createdAt",
-        "usableFlow.updatedAt",
-        "usableFlow.isDeleted",
-        "usableFlow.isActive",
-        "usableFlow.description",
-        "usableFlow.category",
-        "usableFlow.tools",
-        "usableFlow.status",
-        "usableFlow.templateName",
-        "usableFlow.chargeCode",
-        "usableFlow.access",
-        "usableFlow.iconBlobUrl",
-      ])
-      .addSelect("flow.name")
-      .where("usableFlow.isDeleted = false");
+  access_alias = aliased(UsableFlowAccess)
+    flow_alias = aliased(Flow)
+
+    stmt = (
+        select(
+            UsableFlow.id,
+            UsableFlow.flowId,
+            UsableFlow.requireFile,
+            UsableFlow.supportMultipleFiles,
+            UsableFlow.supportedFileTypesIds,
+            UsableFlow.createdBy,
+            UsableFlow.lastUpdatedBy,
+            UsableFlow.createdAt,
+            UsableFlow.updatedAt,
+            UsableFlow.isDeleted,
+            UsableFlow.isActive,
+            UsableFlow.description,
+            UsableFlow.category,
+            UsableFlow.tools,
+            UsableFlow.status,
+            UsableFlow.templateName,
+            UsableFlow.chargeCode,
+            UsableFlow.access,
+            UsableFlow.iconBlobUrl,
+            flow_alias.name.label("flow_name")
+        )
+        .join(
+            access_alias,
+            (access_alias.usableFlowId == UsableFlow.id) & 
+            (access_alias.emails == current_user_mail),
+            isouter=True
+        )
+        .join(
+            flow_alias,
+            flow_alias.id == UsableFlow.flowId,
+            isouter=True
+        )
+        .where(UsableFlow.isDeleted == False)
+    )
+
+    result = await db.execute(stmt)
+    return result.mappings().all()  # returns list of dicts
