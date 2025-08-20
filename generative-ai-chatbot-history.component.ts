@@ -1,360 +1,199 @@
-  async listAllUsableFlows(
-    skip: number = 0,
-    limit: number = 10,
-    userId: string,
-    isAdminScreen: boolean,
-    searchTerm?: string,
-    categoryId?: string,
-    sortField?: string,
-    sortOrder?: SortOrder
-  ): Promise<{
-    message: string;
-    usableFlows: UsableFlowWithCreatorName[];
-    total: number;
-    pageViewTotal: number;
-    totalCountWithoutPagination: number;
-    latestUpdatedTemplateName: string | null;
-    counts: {
-      publishedCount: number;
-      inDevelopmentCount: number;
-      activeCount: number;
-      inActiveCount: number;
-    };
-    categoryCounts: Record<string, { statuses: Record<string, number> }>;
-  }> {
-    const connection = getConnection();
+from fastapi import APIRouter, HTTPException, Query, Depends
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
+from sqlalchemy import func, or_, and_
+from typing import Optional, Dict, Any
+from database import get_session  # your async session dependency
+from models import User, UsableFlow, UsableFlowAccess, Flow, Execution, UsableFlowCategory, UsableFlowTools
+from utils import sanitize_safe_text, capitalize_first_char
+import logging
 
-    const isAdmin: boolean = String(isAdminScreen).toLowerCase() === "true";
-    const userDetails = await connection
-      .createQueryBuilder(User, "userDetails")
-      .where("userDetails.id = :userId", { userId })
-      .getOne();
+router = APIRouter()
+logger = logging.getLogger(__name__)
 
-    if (!userDetails) {
-      logger.error("User not found with ID: {}", userId);
-      throw new APIError("User not found", 404);
-    }
 
-    const isSuperAdmin = userDetails.is_superuser;
-    const currentUserMail = userDetails.email;
+@router.get("/usable-flows")
+async def list_all_usable_flows(
+    skip: int = 0,
+    limit: int = 10,
+    userId: str = Query(...),
+    isAdminScreen: bool = Query(False),
+    searchTerm: Optional[str] = None,
+    categoryId: Optional[str] = None,
+    sortField: Optional[str] = None,
+    sortOrder: Optional[str] = None,
+    session: AsyncSession = Depends(get_session),
+):
+    # 🔑 Get user
+    result = await session.execute(select(User).where(User.id == userId))
+    user = result.scalar_one_or_none()
+    if not user:
+        logger.error(f"User not found with ID: {userId}")
+        raise HTTPException(status_code=404, detail="User not found")
 
-    const queryBuilder = await connection
-      .createQueryBuilder(UsableFlow, "usableFlow")
-      .leftJoin(
+    isSuperAdmin = user.is_superuser
+    currentUserMail = user.email
+    isAdmin = str(isAdminScreen).lower() == "true"
+
+    # Base query
+    query = select(
+        UsableFlow.id,
+        UsableFlow.flowId,
+        UsableFlow.requireFile,
+        UsableFlow.supportMultipleFiles,
+        UsableFlow.supportedFileTypesIds,
+        UsableFlow.createdBy,
+        UsableFlow.lastUpdatedBy,
+        UsableFlow.createdAt,
+        UsableFlow.updatedAt,
+        UsableFlow.isDeleted,
+        UsableFlow.isActive,
+        UsableFlow.description,
+        UsableFlow.category,
+        UsableFlow.tools,
+        UsableFlow.status,
+        UsableFlow.templateName,
+        UsableFlow.chargeCode,
+        UsableFlow.access,
+        UsableFlow.iconBlobUrl,
+        Flow.name.label("flow_name"),
+    ).join(
+        Flow, Flow.id == UsableFlow.flowId, isouter=True
+    ).outerjoin(
         UsableFlowAccess,
-        "access",
-        "access.usableFlowId = usableFlow.id AND access.emails = :email",
-        { email: currentUserMail }
-      )
-      .leftJoinAndMapOne(
-        "usableFlow.flow",
-        Flow,
-        "flow",
-        "flow.id = usableFlow.flowId"
-      )
-      .select([
-        "usableFlow.id",
-        "usableFlow.flowId",
-        "usableFlow.requireFile",
-        "usableFlow.supportMultipleFiles",
-        "usableFlow.supportedFileTypesIds",
-        "usableFlow.createdBy",
-        "usableFlow.lastUpdatedBy",
-        "usableFlow.createdAt",
-        "usableFlow.updatedAt",
-        "usableFlow.isDeleted",
-        "usableFlow.isActive",
-        "usableFlow.description",
-        "usableFlow.category",
-        "usableFlow.tools",
-        "usableFlow.status",
-        "usableFlow.templateName",
-        "usableFlow.chargeCode",
-        "usableFlow.access",
-        "usableFlow.iconBlobUrl",
-      ])
-      .addSelect("flow.name")
-      .where("usableFlow.isDeleted = false");
+        and_(
+            UsableFlowAccess.usableFlowId == UsableFlow.id,
+            UsableFlowAccess.emails == currentUserMail,
+        )
+    ).where(UsableFlow.isDeleted == False)
 
-    if (!isAdmin) {
-      queryBuilder
-        .andWhere("usableFlow.isActive = true")
-        .andWhere("usableFlow.status = :publishedStatus", {
-          publishedStatus: UsableFlowStatus.Published,
-        });
-    }
+    # Filters for admin/non-admin
+    if not isAdmin:
+        query = query.where(
+            UsableFlow.isActive == True,
+            UsableFlow.status == "Published"  # adapt enum usage
+        )
 
-    queryBuilder.andWhere(
-      new Brackets((qb) => {
-        if (!isSuperAdmin) {
-          qb.where("usableFlow.access = :publicAccess", {
-            publicAccess: "public",
-          }).orWhere(
-            new Brackets((qb2) => {
-              qb2
-                .where("usableFlow.access = :specificAccess", {
-                  specificAccess: "specific",
-                })
-                .andWhere("access.id IS NOT NULL");
-            })
-          );
-        }
-      })
-    );
+    if not isSuperAdmin:
+        query = query.where(
+            or_(
+                UsableFlow.access == "public",
+                and_(
+                    UsableFlow.access == "specific",
+                    UsableFlowAccess.id.isnot(None)
+                )
+            )
+        )
 
-    // 🔍 Add search condition if searchTerm is provided
-    if (searchTerm && searchTerm.length > 0) {
-      const sanitized = sanitizeSafeText(searchTerm);
-      queryBuilder.andWhere("usableFlow.templateName ILIKE :searchTerm", {
-        searchTerm: `%${sanitized}%`,
-      });
-    }
+    # 🔍 Search
+    if searchTerm:
+        sanitized = sanitize_safe_text(searchTerm)
+        query = query.where(UsableFlow.templateName.ilike(f"%{sanitized}%"))
 
-    // Apply sorting BEFORE executing any queries
-    const allowedExecutionSortFields = ["templateName", "updatedAt"];
-    if (
-      sortField &&
-      sortOrder &&
-      allowedExecutionSortFields.includes(sortField) &&
-      [SortOrder.asc, SortOrder.desc].includes(sortOrder)
-    ) {
-      logger.info(
-        `Applied custom sorting on usableFlow with 'usableFlow.${sortField} ${sortOrder}'`
-      );
-      queryBuilder.orderBy(`usableFlow.${sortField}`, sortOrder);
-    } else {
-      queryBuilder.orderBy("usableFlow.updatedAt", "DESC");
-    }
+    # Sorting
+    allowed_sort = ["templateName", "updatedAt"]
+    if sortField in allowed_sort and sortOrder in ["asc", "desc"]:
+        sort_col = getattr(UsableFlow, sortField)
+        query = query.order_by(sort_col.asc() if sortOrder == "asc" else sort_col.desc())
+    else:
+        query = query.order_by(UsableFlow.updatedAt.desc())
 
-    // ✅ Always apply pagination
-    queryBuilder.skip(skip).take(limit);
+    # Pagination
+    query = query.offset(skip).limit(limit)
 
-    // Create a separate query builder for count operations
-    const countQueryBuilder = connection
-      .createQueryBuilder(UsableFlow, "usableFlow")
-      .leftJoin(
-        UsableFlowAccess,
-        "access",
-        "access.usableFlowId = usableFlow.id AND access.emails = :email",
-        { email: currentUserMail }
-      )
-      .where("usableFlow.isDeleted = false");
+    # Fetch results
+    result = await session.execute(query)
+    usable_flows = result.fetchall()
 
-    // Apply the same conditions to count query
-    if (!isAdmin) {
-      countQueryBuilder
-        .andWhere("usableFlow.isActive = true")
-        .andWhere("usableFlow.status = :publishedStatus", {
-          publishedStatus: UsableFlowStatus.Published,
-        });
-    }
+    # Format usable flows
+    usable_flows_list = []
+    flow_ids = []
+    for uf in usable_flows:
+        flow_data = uf._asdict()
+        flow_data["name"] = flow_data.pop("flow_name", None)
+        usable_flows_list.append(flow_data)
+        flow_ids.append(flow_data["id"])
 
-    countQueryBuilder.andWhere(
-      new Brackets((qb) => {
-        if (!isSuperAdmin) {
-          qb.where("usableFlow.access = :publicAccess", {
-            publicAccess: "public",
-          }).orWhere(
-            new Brackets((qb2) => {
-              qb2
-                .where("usableFlow.access = :specificAccess", {
-                  specificAccess: "specific",
-                })
-                .andWhere("access.id IS NOT NULL");
-            })
-          );
-        }
-      })
-    );
+    # Execution counts
+    execution_counts = {}
+    if flow_ids:
+        exec_q = select(
+            Execution.usableFlowId,
+            func.count(Execution.id).label("count")
+        ).where(Execution.usableFlowId.in_(flow_ids)).group_by(Execution.usableFlowId)
+        exec_result = await session.execute(exec_q)
+        for row in exec_result:
+            execution_counts[row.usableFlowId] = row.count
 
-    if (searchTerm && searchTerm.length > 0) {
-      const sanitized = sanitizeSafeText(searchTerm);
-      countQueryBuilder.andWhere("usableFlow.templateName ILIKE :searchTerm", {
-        searchTerm: `%${sanitized}%`,
-      });
-    }
+    # Attach counts & user info
+    final_flows = []
+    for flow in usable_flows_list:
+        flow["executionCount"] = execution_counts.get(flow["id"], 0)
 
-    let totalCountWithoutPagination = 0;
-    if (!isAdmin) {
-      totalCountWithoutPagination = await countQueryBuilder.getCount();
-    }
+        # creator
+        creator = await session.execute(select(User.username).where(User.id == flow["createdBy"]))
+        creator_name = creator.scalar_one_or_none()
 
-    // Now run the count query
-    const countResults = (await countQueryBuilder
-      .select([
-        `COALESCE(SUM(CASE WHEN usableFlow.status = '${UsableFlowStatus.Published}' THEN 1 ELSE 0 END), 0) as "publishedCount"`,
-        `COALESCE(SUM(CASE WHEN usableFlow.status = '${UsableFlowStatus.InDevelopment}' THEN 1 ELSE 0 END), 0) as "inDevelopmentCount"`,
-        `COALESCE(SUM(CASE WHEN usableFlow.isActive = true THEN 1 ELSE 0 END), 0) AS "activeCount"`,
-        `COALESCE(SUM(CASE WHEN usableFlow.isActive = false THEN 1 ELSE 0 END), 0) AS "inActiveCount"`,
-        `COALESCE(SUM(CASE WHEN usableFlow.status = '${UsableFlowStatus.Published}' AND usableFlow.isActive = true THEN 1 ELSE 0 END), 0) AS "activePublishedCount"`,
-      ])
-      .getRawOne()) || {
-      publishedCount: 0,
-      inDevelopmentCount: 0,
-      activeCount: 0,
-      inActiveCount: 0,
-      activePublishedCount: 0,
-    };
+        # updater
+        updater = await session.execute(
+            select(User.first_name, User.last_name).where(User.id == flow["lastUpdatedBy"])
+        )
+        upd_user = updater.first()
+        updater_name = None
+        if upd_user:
+            updater_name = f"{capitalize_first_char(upd_user.first_name or '')} {capitalize_first_char(upd_user.last_name or '')}".strip()
 
-    // Add totalCount if user is admin
-    if (isAdmin) {
-      countResults.totalCount =
-        parseInt(countResults.publishedCount) +
-        parseInt(countResults.inDevelopmentCount);
-    }
+        flow["creator"] = creator_name or "Unknown"
+        flow["updater"] = updater_name or "Unknown"
+        flow["description"] = flow["description"] or "No description available"
 
-    const categoryCountRaw = await countQueryBuilder
-      .select(`unnest("usableFlow"."category")`, "category_id")
-      .addSelect(`"usableFlow"."status"`, "status")
-      .addSelect("COUNT(*)", "count")
-      .groupBy(`category_id, "usableFlow"."status"`)
-      .getRawMany();
+        # categories
+        if flow["category"]:
+            cat_q = await session.execute(
+                select(UsableFlowCategory.name).where(UsableFlowCategory.id.in_(flow["category"]))
+            )
+            flow["categoryNames"] = [c.name for c in cat_q.scalars().all()]
+        else:
+            flow["categoryNames"] = []
 
-    const categoryCountMap: Record<
-      string,
-      { statuses: Record<string, number> }
-    > = {};
+        # tools
+        if flow["tools"]:
+            tool_q = await session.execute(
+                select(UsableFlowTools.name).where(UsableFlowTools.id.in_(flow["tools"]))
+            )
+            flow["toolNames"] = [t.name for t in tool_q.scalars().all()]
+        else:
+            flow["toolNames"] = []
 
-    categoryCountRaw.forEach((row: any) => {
-      const categoryId = row.category_id;
-      const status = row.status;
-      const count = parseInt(row.count);
+        final_flows.append(flow)
 
-      if (!categoryCountMap[categoryId]) {
-        categoryCountMap[categoryId] = {
-          statuses: {},
-        };
-      }
-      categoryCountMap[categoryId].statuses[status] =
-        (categoryCountMap[categoryId].statuses[status] || 0) + count;
-    });
+    # Latest updated template
+    latest_q = await session.execute(
+        select(UsableFlow.templateName).where(UsableFlow.isDeleted == False).order_by(UsableFlow.updatedAt.desc()).limit(1)
+    )
+    latest_flow = latest_q.scalar_one_or_none()
 
-    // THEN apply category filter if needed
-    if (categoryId) {
-      queryBuilder.andWhere(":categoryId = ANY(usableFlow.category)", {
-        categoryId,
-      });
-      countQueryBuilder.andWhere(":categoryId = ANY(usableFlow.category)", {
-        categoryId,
-      });
-    }
+    # Counts summary
+    count_q = select(
+        func.sum(func.case((UsableFlow.status == "Published", 1), else_=0)).label("publishedCount"),
+        func.sum(func.case((UsableFlow.status == "InDevelopment", 1), else_=0)).label("inDevelopmentCount"),
+        func.sum(func.case((UsableFlow.isActive == True, 1), else_=0)).label("activeCount"),
+        func.sum(func.case((UsableFlow.isActive == False, 1), else_=0)).label("inActiveCount"),
+    ).where(UsableFlow.isDeleted == False)
+    count_res = await session.execute(count_q)
+    count_results = count_res.first()._asdict()
 
-    // Fetch usable flows using the main query builder
-    let usableFlows: CustomUsableFlow[] = await queryBuilder.getMany();
-
-    usableFlows = usableFlows.map(({ flow, ...rest }) => ({
-      ...rest,
-      name: flow?.name ?? null,
-    }));
-
-    const flowIds: string[] = usableFlows.map((flow) => flow.id);
-
-    let executionCounts = [];
-
-    if (flowIds.length > 0) {
-      executionCounts = await connection
-        .createQueryBuilder(Execution, "execution")
-        .select("COUNT(execution.id)", "count")
-        .addSelect("execution.usableFlowId", "usableFlowId")
-        .where("execution.usableFlowId IN (:...flowIds)", { flowIds })
-        .groupBy("execution.usableFlowId")
-        .getRawMany();
-    }
-
-    for (const flow of usableFlows) {
-      const countData = executionCounts.find(
-        (ec) => ec.usableFlowId === flow.id
-      );
-      flow.executionCount = countData ? parseInt(countData.count) : 0;
-    }
-
-    // fetch corresponding names for createdBy and lastUpdatedBy from user table and flow description from flow table
-    const usableFlowsWithUserNames = await Promise.all(
-      usableFlows.map(async (flow: UsableFlow) => {
-        const createdByUser = await connection
-          .createQueryBuilder(User, "user")
-          .select(["user.username"])
-          .where("user.id = :id", { id: flow.createdBy })
-          .getOne();
-
-        const lastUpdatedByUser = await connection
-          .createQueryBuilder(User, "user")
-          .select(["user.first_name", "user.last_name"])
-          .where("user.id = :id", { id: flow.lastUpdatedBy })
-          .getOne();
-
-        const categoryNames =
-          flow.category.length > 0
-            ? await connection
-                .createQueryBuilder(UsableFlowCategory, "category")
-                .select(["category.name"])
-                .where("category.id IN (:...ids)", { ids: flow.category })
-                .getMany()
-            : [];
-
-        const toolNames =
-          flow.tools.length > 0
-            ? await connection
-                .createQueryBuilder(UsableFlowTools, "tools")
-                .select(["tools.name"])
-                .where("tools.id IN (:...ids)", { ids: flow.tools })
-                .getMany()
-            : [];
-
-        const getFullName = (user: User | null) => {
-          if (!user) return "Unknown";
-          const firstName = capitalizeFirstChar(user.first_name?.trim() ?? "");
-          const lastName = capitalizeFirstChar(user.last_name?.trim() ?? "");
-          return `${firstName} ${lastName}`.trim();
-        };
-
-        return {
-          ...flow,
-          creator: createdByUser?.username || "Unknown",
-          updater: getFullName(lastUpdatedByUser) || "Unknown",
-          updatedAt: flow.updatedAt || flow.createdAt,
-          isDeleted: flow.isDeleted ?? false, // Default to false if not set
-          isActive: flow.isActive ?? true, // Default
-          description: flow.description || "No description available",
-          categoryNames: categoryNames.map(
-            (category: UsableFlowCategory) => category.name
-          ),
-          toolNames: toolNames.map((tool: UsableFlowTools) => tool.name),
-          status: flow.status,
-          templateName: flow.templateName,
-          ChargeCodeStatus: flow.chargeCode,
-        };
-      })
-    );
-
-    const latestFlow = await connection
-      .getRepository(UsableFlow)
-      .createQueryBuilder("uf")
-      .select(["uf.templateName"])
-      .where("uf.isDeleted = false")
-      .orderBy("uf.updatedAt", "DESC")
-      .limit(1)
-      .getOne();
-
-    const latestUpdatedTemplateName = latestFlow?.templateName ?? null;
-    let total = countResults.activePublishedCount;
-    if (isAdmin) {
-      total = countResults.totalCount;
-    }
+    total = count_results["publishedCount"] if not isAdmin else (
+        count_results["publishedCount"] + count_results["inDevelopmentCount"]
+    )
 
     return {
-      message: parseInt(total) > 0 ? "Success" : "No records found",
-      usableFlows: usableFlowsWithUserNames,
-      total: parseInt(total),
-      categoryCounts: categoryCountMap,
-      latestUpdatedTemplateName,
-      pageViewTotal: usableFlowsWithUserNames.length,
-      totalCountWithoutPagination: totalCountWithoutPagination,
-      counts: {
-        publishedCount: parseInt(countResults.publishedCount),
-        inDevelopmentCount: parseInt(countResults.inDevelopmentCount),
-        activeCount: parseInt(countResults.activeCount),
-        inActiveCount: parseInt(countResults.inActiveCount),
-      },
-    };
-  }
+        "message": "Success" if total > 0 else "No records found",
+        "usableFlows": final_flows,
+        "total": total,
+        "latestUpdatedTemplateName": latest_flow,
+        "pageViewTotal": len(final_flows),
+        "totalCountWithoutPagination": len(final_flows),
+        "counts": count_results,
+        "categoryCounts": {},  # TODO: implement like TS version if needed
+    }
