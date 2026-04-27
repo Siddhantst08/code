@@ -1,0 +1,1491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Impact on Healthcare 2025 — adelphi Group</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --black: #000000;
+      --white: #FFFFFF;
+      --dark-bg-start: #1a2a2a;
+      --dark-bg-end: #0d1f1e;
+      --teal: #067977;
+      --red: #E81A33;
+      --green: #507437;
+      --orange: #F26B43;
+      --blue: #0055FF;
+      --gray-mid: #979797;
+      --gray-light: #D5D5D5;
+      --off-white: #F5F5F5;
+      --font-heading: 'Libre Baskerville', Georgia, serif;
+      --font-body: 'Open Sans', Arial, Calibri, sans-serif;
+    }
+
+    html, body {
+      width: 100%; height: 100%;
+      background: #2a2a2a;
+      font-family: var(--font-body);
+      overflow: hidden;
+    }
+
+    #presentation {
+      width: 100vw; height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      position: relative;
+    }
+
+    #slides-container {
+      position: relative;
+      width: 1280px; height: 720px;
+      transform-origin: center center;
+    }
+
+    .slide {
+      position: absolute; inset: 0;
+      width: 1280px; height: 720px;
+      overflow: hidden;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 150ms ease;
+    }
+
+    .slide.active {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    /* ── BOTTOM STRIPE ── */
+    .stripe {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 5px;
+      display: flex;
+      z-index: 10;
+    }
+    .stripe-r { flex: 33%; background: var(--red); }
+    .stripe-d { flex: 34%; background: var(--dark-bg-start); }
+    .stripe-t { flex: 33%; background: var(--teal); }
+
+    /* ── LOGO BAR ── */
+    .logo-bar {
+      position: absolute;
+      bottom: 12px; left: 48px;
+      display: flex; gap: 20px; align-items: center;
+      z-index: 11;
+    }
+    .logo-bar span {
+      font-family: var(--font-body);
+      font-size: 11px; font-weight: 700;
+      letter-spacing: 0.02em;
+      display: flex; align-items: center; gap: 4px;
+    }
+    .logo-adelphi { color: #1a2a2a; }
+    .logo-adelphi .dot { color: var(--red); font-size: 14px; }
+    .logo-phiyond { color: #1a2a2a; }
+    .logo-phiyond .dot { color: var(--orange); font-size: 12px; }
+    .logo-seek { color: #1a2a2a; letter-spacing: 0.04em; }
+
+    .logo-bar-dark span { color: rgba(255,255,255,0.7); }
+    .logo-bar-dark .logo-adelphi .dot { color: var(--red); }
+    .logo-bar-dark .logo-phiyond .dot { color: var(--orange); }
+
+    /* ── PAGE NUMBER ── */
+    .page-num {
+      position: absolute;
+      bottom: 20px; right: 48px;
+      font-family: var(--font-body);
+      font-size: 11px; color: var(--gray-mid);
+      z-index: 12;
+    }
+
+    /* ══════════════════════════════════════
+       SLIDE 1 — TITLE SLIDE (DARK)
+    ══════════════════════════════════════ */
+    .slide-title-dark {
+      background: linear-gradient(135deg, var(--dark-bg-start) 0%, var(--dark-bg-end) 100%);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      text-align: center;
+      padding: 48px;
+      position: relative;
+    }
+    .slide-title-dark .pre-title {
+      font-family: var(--font-body);
+      font-size: 13px; font-weight: 600;
+      color: var(--teal);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 24px;
+    }
+    .slide-title-dark .main-title {
+      font-family: var(--font-heading);
+      font-weight: 700;
+      font-size: 44px;
+      color: var(--white);
+      line-height: 1.18;
+      max-width: 820px;
+      margin-bottom: 16px;
+    }
+    .slide-title-dark .main-title .accent-red { color: var(--red); }
+    .slide-title-dark .subtitle {
+      font-family: var(--font-body);
+      font-size: 18px; color: rgba(255,255,255,0.65);
+      font-weight: 400;
+      margin-bottom: 8px;
+    }
+    .slide-title-dark .date-line {
+      font-family: var(--font-body);
+      font-size: 14px; color: rgba(255,255,255,0.4);
+    }
+    .slide-title-dark .teal-line {
+      width: 60px; height: 3px;
+      background: var(--teal);
+      margin: 28px auto 32px;
+    }
+    /* subtle grid overlay */
+    .slide-title-dark::before {
+      content: '';
+      position: absolute; inset: 0;
+      background-image: 
+        linear-gradient(rgba(6,121,119,0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(6,121,119,0.06) 1px, transparent 1px);
+      background-size: 80px 80px;
+      pointer-events: none;
+    }
+
+    /* ══════════════════════════════════════
+       SLIDE 2 — AGENDA
+    ══════════════════════════════════════ */
+    .slide-agenda {
+      background: var(--white);
+      padding: 36px 48px 28px;
+    }
+    .slide-agenda .s-title {
+      font-family: var(--font-heading);
+      font-size: 26px; font-weight: 700;
+      color: var(--black);
+      margin-bottom: 6px;
+    }
+    .slide-agenda .s-sub {
+      font-family: var(--font-body);
+      font-size: 13px; color: var(--teal);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 24px;
+    }
+    .slide-agenda .divider-teal {
+      width: 100%; height: 1px;
+      background: linear-gradient(90deg, var(--teal) 0%, var(--gray-light) 100%);
+      margin-bottom: 24px;
+    }
+    .agenda-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 0 40px;
+    }
+    .agenda-col-title {
+      font-family: var(--font-body);
+      font-size: 11px; font-weight: 700;
+      color: var(--gray-mid);
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin-bottom: 14px;
+    }
+    .agenda-item {
+      display: flex; gap: 12px;
+      align-items: flex-start;
+      margin-bottom: 14px;
+    }
+    .agenda-num {
+      font-family: var(--font-heading);
+      font-size: 18px; font-weight: 700;
+      color: var(--teal); min-width: 28px;
+      line-height: 1.1;
+    }
+    .agenda-content strong {
+      font-family: var(--font-body);
+      font-size: 13px; font-weight: 700;
+      color: var(--black);
+      display: block;
+    }
+    .agenda-content span {
+      font-family: var(--font-body);
+      font-size: 12px; color: var(--gray-mid);
+    }
+
+    /* ══════════════════════════════════════
+       SECTION DIVIDER SLIDES
+    ══════════════════════════════════════ */
+    .slide-section {
+      background: var(--white);
+      display: flex; flex-direction: column;
+      justify-content: center;
+      padding: 48px 72px;
+      position: relative;
+    }
+    .slide-section .sec-label {
+      font-family: var(--font-body);
+      font-size: 12px; font-weight: 700;
+      color: var(--teal);
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      margin-bottom: 16px;
+    }
+    .slide-section .sec-num {
+      font-family: var(--font-heading);
+      font-size: 96px; font-weight: 700;
+      color: var(--black);
+      line-height: 0.9;
+      opacity: 0.07;
+      position: absolute;
+      right: 72px; top: 50%;
+      transform: translateY(-60%);
+    }
+    .slide-section .sec-title {
+      font-family: var(--font-heading);
+      font-size: 36px; font-weight: 700;
+      color: var(--black);
+      line-height: 1.2;
+      max-width: 620px;
+      margin-bottom: 16px;
+    }
+    .slide-section .sec-title .teal { color: var(--teal); }
+    .slide-section .sec-desc {
+      font-family: var(--font-body);
+      font-size: 15px; color: var(--gray-mid);
+      max-width: 560px;
+      line-height: 1.6;
+    }
+    .slide-section .sec-bar {
+      width: 48px; height: 4px;
+      background: var(--teal);
+      margin-bottom: 20px;
+    }
+
+    /* ══════════════════════════════════════
+       TEXT + CONTENT SLIDES
+    ══════════════════════════════════════ */
+    .slide-content {
+      background: var(--white);
+      padding: 36px 48px 50px;
+    }
+    .slide-content .s-label {
+      font-family: var(--font-body);
+      font-size: 11px; font-weight: 700;
+      color: var(--teal);
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin-bottom: 8px;
+    }
+    .slide-content .s-title {
+      font-family: var(--font-heading);
+      font-size: 26px; font-weight: 700;
+      color: var(--black);
+      line-height: 1.2;
+      margin-bottom: 4px;
+    }
+    .slide-content .s-title .accent-teal { color: var(--teal); }
+    .slide-content .s-title .accent-red { color: var(--red); }
+    .slide-content .divider-line {
+      width: 100%; height: 1px;
+      background: var(--gray-light);
+      margin: 14px 0;
+    }
+    .bullet-list {
+      list-style: none;
+      margin-top: 4px;
+    }
+    .bullet-list li {
+      font-family: var(--font-body);
+      font-size: 14px; color: #1a1a1a;
+      line-height: 1.55;
+      padding: 7px 0 7px 20px;
+      position: relative;
+      border-bottom: 1px solid rgba(213,213,213,0.4);
+    }
+    .bullet-list li:last-child { border-bottom: none; }
+    .bullet-list li::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 16px;
+      width: 7px; height: 7px;
+      background: var(--teal);
+      border-radius: 50%;
+    }
+    .bullet-list li strong { font-weight: 700; color: var(--black); }
+    .bullet-list li .sub {
+      display: block;
+      font-size: 12px; color: var(--gray-mid);
+      margin-top: 2px;
+    }
+
+    /* ══════════════════════════════════════
+       TWO-COLUMN SLIDES
+    ══════════════════════════════════════ */
+    .slide-two-col {
+      background: var(--white);
+      padding: 36px 48px 50px;
+    }
+    .slide-two-col .s-label {
+      font-family: var(--font-body);
+      font-size: 11px; font-weight: 700;
+      color: var(--teal);
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin-bottom: 8px;
+    }
+    .slide-two-col .s-title {
+      font-family: var(--font-heading);
+      font-size: 24px; font-weight: 700;
+      color: var(--black);
+      margin-bottom: 4px;
+    }
+    .col-divider-line {
+      width: 100%; height: 1px;
+      background: var(--gray-light);
+      margin: 14px 0 18px;
+    }
+    .two-col-body {
+      display: grid; grid-template-columns: 1fr 1px 1fr;
+      gap: 0 28px; height: 530px;
+    }
+    .col-sep { background: var(--gray-light); }
+    .col-header {
+      font-family: var(--font-body);
+      font-size: 11px; font-weight: 700;
+      color: var(--teal);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 14px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid var(--teal);
+    }
+
+    /* ══════════════════════════════════════
+       STATISTICS SLIDE
+    ══════════════════════════════════════ */
+    .slide-stats {
+      background: var(--white);
+      padding: 36px 48px 50px;
+    }
+    .slide-stats .s-label {
+      font-family: var(--font-body);
+      font-size: 11px; font-weight: 700;
+      color: var(--teal);
+      text-transform: uppercase; letter-spacing: 0.12em;
+      margin-bottom: 8px;
+    }
+    .slide-stats .s-title {
+      font-family: var(--font-heading);
+      font-size: 24px; font-weight: 700;
+      color: var(--black); margin-bottom: 4px;
+    }
+    .slide-stats .divider-line {
+      width: 100%; height: 1px;
+      background: var(--gray-light);
+      margin: 14px 0 20px;
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(2, 1fr);
+      gap: 0;
+      border: 1px solid var(--gray-light);
+    }
+    .stat-cell {
+      padding: 22px 24px;
+      border-right: 1px solid var(--gray-light);
+      border-bottom: 1px solid var(--gray-light);
+      display: flex; flex-direction: column;
+      justify-content: center;
+    }
+    .stat-cell:nth-child(3n) { border-right: none; }
+    .stat-cell:nth-child(n+4) { border-bottom: none; }
+    .stat-num {
+      font-family: var(--font-heading);
+      font-size: 46px; font-weight: 700;
+      color: var(--teal);
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+    .stat-num .unit {
+      font-size: 28px;
+    }
+    .stat-label {
+      font-family: var(--font-body);
+      font-size: 13px; color: var(--black);
+      font-weight: 600;
+      line-height: 1.3;
+    }
+    .stat-sub {
+      font-family: var(--font-body);
+      font-size: 11px; color: var(--gray-mid);
+      margin-top: 4px; line-height: 1.4;
+    }
+
+    /* ══════════════════════════════════════
+       CASE STUDY SLIDE
+    ══════════════════════════════════════ */
+    .slide-case {
+      background: var(--white);
+      padding: 36px 48px 50px;
+    }
+    .slide-case .s-label {
+      font-family: var(--font-body);
+      font-size: 11px; font-weight: 700;
+      color: var(--teal);
+      text-transform: uppercase; letter-spacing: 0.12em;
+      margin-bottom: 8px;
+    }
+    .slide-case .s-title {
+      font-family: var(--font-heading);
+      font-size: 24px; font-weight: 700;
+      color: var(--black); margin-bottom: 4px;
+    }
+    .slide-case .s-title .accent-red { color: var(--red); }
+    .slide-case .divider-line {
+      width: 100%; height: 1px;
+      background: var(--gray-light);
+      margin: 14px 0 18px;
+    }
+    .case-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr 1fr;
+      gap: 1px;
+      background: var(--gray-light);
+      border: 1px solid var(--gray-light);
+      height: 430px;
+    }
+    .case-cell {
+      background: var(--white);
+      padding: 20px 22px;
+    }
+    .case-cell-title {
+      font-family: var(--font-body);
+      font-size: 12px; font-weight: 700;
+      color: var(--teal);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 10px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--gray-light);
+    }
+    .case-cell p {
+      font-family: var(--font-body);
+      font-size: 13px; color: #2a2a2a;
+      line-height: 1.55;
+    }
+    .case-cell ul {
+      list-style: none;
+    }
+    .case-cell ul li {
+      font-family: var(--font-body);
+      font-size: 13px; color: #2a2a2a;
+      line-height: 1.5;
+      padding: 3px 0 3px 14px;
+      position: relative;
+    }
+    .case-cell ul li::before {
+      content: '→';
+      position: absolute; left: 0;
+      color: var(--teal); font-size: 11px;
+      top: 4px;
+    }
+
+    /* ══════════════════════════════════════
+       ICON PROCESS SLIDE
+    ══════════════════════════════════════ */
+    .slide-process {
+      background: var(--white);
+      padding: 36px 48px 50px;
+    }
+    .slide-process .s-label {
+      font-family: var(--font-body);
+      font-size: 11px; font-weight: 700;
+      color: var(--teal);
+      text-transform: uppercase; letter-spacing: 0.12em;
+      margin-bottom: 8px;
+    }
+    .slide-process .s-title {
+      font-family: var(--font-heading);
+      font-size: 24px; font-weight: 700;
+      color: var(--black); margin-bottom: 4px;
+    }
+    .slide-process .divider-line {
+      width: 100%; height: 1px;
+      background: var(--gray-light);
+      margin: 14px 0 28px;
+    }
+    .process-row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 0;
+      margin-bottom: 32px;
+    }
+    .process-step {
+      display: flex; flex-direction: column;
+      align-items: center; text-align: center;
+      flex: 1;
+    }
+    .process-circle {
+      width: 64px; height: 64px;
+      border-radius: 50%;
+      background: var(--teal);
+      color: var(--white);
+      font-family: var(--font-heading);
+      font-size: 22px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 12px;
+      flex-shrink: 0;
+    }
+    .process-icon {
+      font-size: 24px; margin-bottom: 0;
+    }
+    .process-step-title {
+      font-family: var(--font-body);
+      font-size: 13px; font-weight: 700;
+      color: var(--black);
+      margin-bottom: 6px;
+    }
+    .process-step-desc {
+      font-family: var(--font-body);
+      font-size: 12px; color: var(--gray-mid);
+      line-height: 1.4; max-width: 140px;
+    }
+    .process-arrow {
+      flex: 0 0 40px;
+      display: flex; align-items: flex-start;
+      padding-top: 20px;
+      justify-content: center;
+      color: var(--gray-light); font-size: 22px;
+    }
+    .process-details {
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+    .process-detail-card {
+      background: var(--off-white);
+      border-left: 3px solid var(--teal);
+      padding: 12px 14px;
+    }
+    .process-detail-card .card-title {
+      font-family: var(--font-body);
+      font-size: 12px; font-weight: 700;
+      color: var(--black); margin-bottom: 6px;
+    }
+    .process-detail-card .card-body {
+      font-family: var(--font-body);
+      font-size: 11px; color: var(--gray-mid);
+      line-height: 1.45;
+    }
+
+    /* ══════════════════════════════════════
+       CONTACT / CLOSING SLIDE
+    ══════════════════════════════════════ */
+    .slide-contact {
+      background: var(--white);
+      padding: 36px 48px 50px;
+    }
+    .slide-contact .s-label {
+      font-family: var(--font-body);
+      font-size: 11px; font-weight: 700;
+      color: var(--teal);
+      text-transform: uppercase; letter-spacing: 0.12em;
+      margin-bottom: 8px;
+    }
+    .slide-contact .s-title {
+      font-family: var(--font-heading);
+      font-size: 24px; font-weight: 700;
+      color: var(--black); margin-bottom: 4px;
+    }
+    .slide-contact .divider-line {
+      width: 100%; height: 1px;
+      background: var(--gray-light);
+      margin: 14px 0 22px;
+    }
+    .contact-cards {
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      gap: 0;
+    }
+    .contact-card {
+      padding: 16px 20px 16px 0;
+      border-right: 1px solid var(--gray-light);
+      padding-right: 24px; margin-right: 4px;
+    }
+    .contact-card:last-child { border-right: none; }
+    .contact-card .cc-company {
+      font-family: var(--font-body);
+      font-size: 12px; font-weight: 700;
+      color: var(--teal);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 10px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--gray-light);
+    }
+    .contact-card .cc-name {
+      font-family: var(--font-body);
+      font-size: 14px; font-weight: 700;
+      color: var(--black);
+      margin-bottom: 4px;
+    }
+    .contact-card .cc-role {
+      font-family: var(--font-body);
+      font-size: 12px; color: var(--gray-mid);
+      margin-bottom: 12px;
+    }
+    .contact-card .cc-detail {
+      font-family: var(--font-body);
+      font-size: 12px; color: #2a2a2a;
+      line-height: 1.7;
+    }
+    .contact-card .cc-detail a {
+      color: var(--teal); text-decoration: none;
+    }
+    .contact-bottom {
+      margin-top: 24px;
+      padding-top: 20px;
+      border-top: 1px solid var(--gray-light);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .contact-bottom .tagline {
+      font-family: var(--font-heading);
+      font-size: 15px; color: var(--black);
+    }
+    .contact-bottom .tagline span { color: var(--teal); }
+    .contact-bottom .web {
+      font-family: var(--font-body);
+      font-size: 13px; color: var(--teal);
+      font-weight: 600;
+    }
+
+    /* ══════════════════════════════════════
+       CONTROLS
+    ══════════════════════════════════════ */
+    #controls {
+      position: fixed;
+      bottom: 20px; left: 50%; transform: translateX(-50%);
+      display: flex; align-items: center; gap: 16px;
+      background: rgba(0,0,0,0.6);
+      padding: 8px 20px;
+      border-radius: 32px;
+      z-index: 1000;
+      backdrop-filter: blur(8px);
+    }
+    #controls button {
+      background: none; border: none; cursor: pointer;
+      color: rgba(255,255,255,0.8);
+      font-size: 18px; padding: 4px 8px;
+      border-radius: 6px;
+      transition: background 0.15s, color 0.15s;
+      line-height: 1;
+    }
+    #controls button:hover { background: rgba(255,255,255,0.12); color: #fff; }
+    #slide-counter {
+      font-family: var(--font-body);
+      font-size: 13px; color: rgba(255,255,255,0.7);
+      min-width: 52px; text-align: center;
+    }
+    #fullscreen-btn {
+      position: fixed; top: 16px; right: 16px;
+      background: rgba(0,0,0,0.5); border: none;
+      border-radius: 8px; padding: 8px 12px;
+      color: rgba(255,255,255,0.7);
+      cursor: pointer; font-size: 16px;
+      z-index: 1000;
+      transition: background 0.15s;
+    }
+    #fullscreen-btn:hover { background: rgba(0,0,0,0.75); color: #fff; }
+
+    /* ── Click Zones ── */
+    .click-zone {
+      position: absolute; top: 0; bottom: 0;
+      width: 15%; cursor: pointer; z-index: 50;
+    }
+    #zone-prev { left: 0; }
+    #zone-next { right: 0; }
+
+    /* ── Overview / Thumbnail Grid ── */
+    #overview {
+      position: fixed; inset: 0;
+      background: rgba(10,20,20,0.96);
+      z-index: 2000;
+      overflow-y: auto;
+      padding: 40px;
+    }
+    #overview.hidden { display: none; }
+    #overview h2 {
+      font-family: var(--font-body);
+      color: rgba(255,255,255,0.5);
+      font-size: 12px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.14em;
+      margin-bottom: 24px;
+    }
+    #overview-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+    .thumb {
+      cursor: pointer;
+      border: 2px solid transparent;
+      border-radius: 4px;
+      overflow: hidden;
+      transition: border-color 0.15s, transform 0.15s;
+      background: #1a2a2a;
+    }
+    .thumb:hover { border-color: var(--teal); transform: scale(1.03); }
+    .thumb.active-thumb { border-color: var(--red); }
+    .thumb-inner {
+      width: 100%; aspect-ratio: 16/9;
+      position: relative; overflow: hidden;
+    }
+    .thumb-inner iframe {
+      width: 1280px; height: 720px;
+      transform: scale(0.234375);
+      transform-origin: top left;
+      pointer-events: none;
+    }
+    .thumb-label {
+      font-family: var(--font-body);
+      font-size: 11px; color: rgba(255,255,255,0.5);
+      padding: 6px 8px;
+    }
+
+    /* Close hint */
+    #overview-close-hint {
+      position: fixed; top: 16px; right: 16px;
+      color: rgba(255,255,255,0.4);
+      font-family: var(--font-body);
+      font-size: 12px; z-index: 2001;
+    }
+
+    /* ── Thumbnail screenshots (canvas-based) ── */
+    .thumb-canvas {
+      width: 100%; aspect-ratio: 16/9;
+      background: #1a2a2a;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .thumb-preview {
+      width: 100%; aspect-ratio: 16/9;
+      position: relative; overflow: hidden;
+      background: #f5f5f5;
+    }
+    .thumb-clone {
+      position: absolute;
+      width: 1280px; height: 720px;
+      top: 0; left: 0;
+      transform-origin: top left;
+    }
+  </style>
+</head>
+<body>
+
+<div id="presentation">
+  <div id="slides-container">
+
+    <!-- ════════════════════════════════════
+         SLIDE 1 — TITLE (DARK)
+    ════════════════════════════════════ -->
+    <div class="slide slide-title-dark active" data-index="0">
+      <div class="pre-title">adelphi Group — Healthcare Practice</div>
+      <div class="teal-line"></div>
+      <div class="main-title">
+        The Impact of <span class="accent-red">Artificial Intelligence</span><br>
+        on Healthcare in 2025
+      </div>
+      <div style="margin-top:20px;">
+        <div class="subtitle">Transforming Diagnosis, Treatment &amp; Delivery</div>
+        <div class="date-line">April 2025 &nbsp;|&nbsp; Strategic Outlook Report</div>
+      </div>
+      <div class="logo-bar logo-bar-dark" style="position:absolute; bottom:28px; left:48px; right:auto;">
+        <span class="logo-adelphi"><span class="dot">●</span> adelphi</span>
+        <span class="logo-phiyond"><span class="dot">◆</span> phiyond</span>
+        <span class="logo-seek">SEEK DEVELOPMENT</span>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════
+         SLIDE 2 — AGENDA
+    ════════════════════════════════════ -->
+    <div class="slide slide-agenda" data-index="1">
+      <div class="s-title">Agenda</div>
+      <div class="s-sub">Today's Presentation</div>
+      <div class="divider-teal"></div>
+      <div class="agenda-grid">
+        <div>
+          <div class="agenda-col-title">Part One — Context &amp; Scale</div>
+          <div class="agenda-item">
+            <div class="agenda-num">01</div>
+            <div class="agenda-content">
+              <strong>The AI Healthcare Landscape</strong>
+              <span>Market overview &amp; investment trends</span>
+            </div>
+          </div>
+          <div class="agenda-item">
+            <div class="agenda-num">02</div>
+            <div class="agenda-content">
+              <strong>Key Statistics &amp; Market Data</strong>
+              <span>2025 figures, adoption rates, ROI</span>
+            </div>
+          </div>
+          <div class="agenda-item">
+            <div class="agenda-num">03</div>
+            <div class="agenda-content">
+              <strong>Clinical Diagnostics &amp; Imaging</strong>
+              <span>AI in radiology, pathology &amp; genomics</span>
+            </div>
+          </div>
+          <div class="agenda-item">
+            <div class="agenda-num">04</div>
+            <div class="agenda-content">
+              <strong>Drug Discovery &amp; Development</strong>
+              <span>Accelerating R&amp;D pipelines</span>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="agenda-col-title">Part Two — Applications &amp; Outlook</div>
+          <div class="agenda-item">
+            <div class="agenda-num">05</div>
+            <div class="agenda-content">
+              <strong>Patient Care &amp; Workflow Automation</strong>
+              <span>EHR, triage &amp; operational efficiency</span>
+            </div>
+          </div>
+          <div class="agenda-item">
+            <div class="agenda-num">06</div>
+            <div class="agenda-content">
+              <strong>AI Implementation Pathway</strong>
+              <span>Adoption framework for health systems</span>
+            </div>
+          </div>
+          <div class="agenda-item">
+            <div class="agenda-num">07</div>
+            <div class="agenda-content">
+              <strong>Case Study: Mayo Clinic &amp; IBM Watson</strong>
+              <span>Lessons from leading implementations</span>
+            </div>
+          </div>
+          <div class="agenda-item">
+            <div class="agenda-num">08</div>
+            <div class="agenda-content">
+              <strong>Risks, Ethics &amp; Strategic Recommendations</strong>
+              <span>Governance, equity &amp; next steps</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="stripe"><div class="stripe-r"></div><div class="stripe-d"></div><div class="stripe-t"></div></div>
+      <div class="logo-bar">
+        <span class="logo-adelphi"><span class="dot">●</span> adelphi</span>
+        <span class="logo-phiyond"><span class="dot">◆</span> phiyond</span>
+        <span class="logo-seek">SEEK DEVELOPMENT</span>
+      </div>
+      <div class="page-num">2</div>
+    </div>
+
+    <!-- ════════════════════════════════════
+         SLIDE 3 — SECTION DIVIDER
+    ════════════════════════════════════ -->
+    <div class="slide slide-section" data-index="2">
+      <div class="sec-label">Part One · Context &amp; Scale</div>
+      <div class="sec-bar"></div>
+      <div class="sec-title">The <span class="teal">AI Healthcare</span><br>Landscape in 2025</div>
+      <div class="sec-desc">From experimental pilots to enterprise-grade deployments, artificial intelligence has become a foundational technology across the global healthcare value chain — reshaping how care is discovered, delivered and managed.</div>
+      <div class="sec-num">01</div>
+      <div class="stripe"><div class="stripe-r"></div><div class="stripe-d"></div><div class="stripe-t"></div></div>
+      <div class="logo-bar">
+        <span class="logo-adelphi"><span class="dot">●</span> adelphi</span>
+        <span class="logo-phiyond"><span class="dot">◆</span> phiyond</span>
+        <span class="logo-seek">SEEK DEVELOPMENT</span>
+      </div>
+      <div class="page-num">3</div>
+    </div>
+
+    <!-- ════════════════════════════════════
+         SLIDE 4 — TEXT+CONTENT: Landscape
+    ════════════════════════════════════ -->
+    <div class="slide slide-content" data-index="3">
+      <div class="s-label">Market Overview</div>
+      <div class="s-title">AI in Healthcare: <span class="accent-teal">A Pivotal Inflection Point</span></div>
+      <div class="divider-line"></div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:32px; margin-top:4px;">
+        <div>
+          <div style="font-family:var(--font-body);font-size:12px;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:10px;">Key Drivers of Adoption</div>
+          <ul class="bullet-list">
+            <li><strong>Physician Burnout Crisis</strong><span class="sub">Administrative burden drives demand for automation in documentation &amp; triage</span></li>
+            <li><strong>Data Abundance</strong><span class="sub">EHR digitisation has created vast datasets suitable for ML training at scale</span></li>
+            <li><strong>Compute Accessibility</strong><span class="sub">Cloud infrastructure reduces barriers to deploying large-scale AI models</span></li>
+            <li><strong>Regulatory Momentum</strong><span class="sub">FDA cleared 692 AI-enabled medical devices by end of 2024 — up 40% YoY</span></li>
+            <li><strong>Pandemic-Era Acceleration</strong><span class="sub">COVID-19 permanently accelerated digital transformation timelines by 3–5 years</span></li>
+          </ul>
+        </div>
+        <div>
+          <div style="font-family:var(--font-body);font-size:12px;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:10px;">Dominant Application Areas</div>
+          <ul class="bullet-list">
+            <li><strong>Medical Imaging &amp; Radiology</strong><span class="sub">42% of all AI healthcare applications — the most mature segment</span></li>
+            <li><strong>Drug Discovery &amp; Genomics</strong><span class="sub">AI reduces target identification timelines from years to months</span></li>
+            <li><strong>Clinical Decision Support</strong><span class="sub">Real-time alerts reduce adverse drug events by up to 55%</span></li>
+            <li><strong>Ambient Clinical Documentation</strong><span class="sub">NLP tools auto-generate clinical notes, saving 2+ hours per physician daily</span></li>
+            <li><strong>Predictive Patient Risk Scoring</strong><span class="sub">Early warning systems for sepsis, readmission &amp; deterioration</span></li>
+          </ul>
+        </div>
+      </div>
+      <div class="stripe"><div class="stripe-r"></div><div class="stripe-d"></div><div class="stripe-t"></div></div>
+      <div class="logo-bar">
+        <span class="logo-adelphi"><span class="dot">●</span> adelphi</span>
+        <span class="logo-phiyond"><span class="dot">◆</span> phiyond</span>
+        <span class="logo-seek">SEEK DEVELOPMENT</span>
+      </div>
+      <div class="page-num">4</div>
+    </div>
+
+    <!-- ════════════════════════════════════
+         SLIDE 5 — STATISTICS
+    ════════════════════════════════════ -->
+    <div class="slide slide-stats" data-index="4">
+      <div class="s-label">Key Statistics · 2025</div>
+      <div class="s-title">AI Healthcare Market at a Glance</div>
+      <div class="divider-line"></div>
+      <div class="stats-grid">
+        <div class="stat-cell">
+          <div class="stat-num">$<span class="unit">187</span>B</div>
+          <div class="stat-label">Global AI Healthcare Market</div>
+          <div class="stat-sub">Projected 2025 market size; growing at 37% CAGR</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-num">94<span class="unit">%</span></div>
+          <div class="stat-label">Hospital AI Adoption Rate</div>
+          <div class="stat-sub">Of US health systems actively deploying AI tools in 2025</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-num">2.3<span class="unit">×</span></div>
+          <div class="stat-label">Faster Diagnostic Speed</div>
+          <div class="stat-sub">AI-assisted radiology read times vs. unaided radiologists</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-num">$<span class="unit">360</span>B</div>
+          <div class="stat-label">Potential Annual Savings</div>
+          <div class="stat-sub">McKinsey estimate of AI-driven efficiency savings in US healthcare</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-num">40<span class="unit">%</span></div>
+          <div class="stat-label">Reduction in Diagnostic Errors</div>
+          <div class="stat-sub">Reported in AI-augmented pathology &amp; imaging workflows</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-num">18<span class="unit">mo</span></div>
+          <div class="stat-label">Shorter Drug Dev Cycles</div>
+          <div class="stat-sub">Average time saved in Phase I–II trials using AI-led candidate selection</div>
+        </div>
+      </div>
+      <div class="stripe"><div class="stripe-r"></div><div class="stripe-d"></div><div class="stripe-t"></div></div>
+      <div class="logo-bar">
+        <span class="logo-adelphi"><span class="dot">●</span> adelphi</span>
+        <span class="logo-phiyond"><span class="dot">◆</span> phiyond</span>
+        <span class="logo-seek">SEEK DEVELOPMENT</span>
+      </div>
+      <div class="page-num">5</div>
+    </div>
+
+    <!-- ════════════════════════════════════
+         SLIDE 6 — TWO COL: Clinical AI
+    ════════════════════════════════════ -->
+    <div class="slide slide-two-col" data-index="5">
+      <div class="s-label">Clinical Applications</div>
+      <div class="s-title">AI in Diagnostics &amp; Clinical Decision Support</div>
+      <div class="col-divider-line"></div>
+      <div class="two-col-body">
+        <div>
+          <div class="col-header">Medical Imaging &amp; Pathology</div>
+          <ul class="bullet-list">
+            <li><strong>Radiology AI</strong><span class="sub">Google DeepMind's LYNA achieves 99% accuracy in lymph node metastasis detection; FDA cleared for clinical use</span></li>
+            <li><strong>Retinal Screening</strong><span class="sub">IDx-DR autonomously detects diabetic retinopathy with no ophthalmologist required — deployed across 800+ US clinics</span></li>
+            <li><strong>Dermatology</strong><span class="sub">AI achieves dermatologist-level accuracy in melanoma classification from smartphone images</span></li>
+            <li><strong>Digital Pathology</strong><span class="sub">Whole-slide imaging AI reduces pathologist workload by 30% and cuts turnaround times</span></li>
+            <li><strong>Cardiac Imaging</strong><span class="sub">Echo AI detects subclinical heart failure up to 5 years before clinical presentation</span></li>
+          </ul>
+        </div>
+        <div class="col-sep"></div>
+        <div>
+          <div class="col-header">Clinical Decision Support &amp; NLP</div>
+          <ul class="bullet-list">
+            <li><strong>Ambient Documentation</strong><span class="sub">Nuance DAX &amp; Microsoft Azure Ambient reduce clinical note time by 72%; physicians gain 2+ hours daily</span></li>
+            <li><strong>Sepsis Prediction</strong><span class="sub">Epic's Sepsis Model alerts clinicians 6 hours before onset — mortality reduction of 18% in early trials</span></li>
+            <li><strong>Medication Safety</strong><span class="sub">AI flags drug-drug interactions in real time; reduces adverse events by up to 55% in ICU settings</span></li>
+            <li><strong>Genomic Interpretation</strong><span class="sub">LLMs now interpret whole-genome sequencing reports in minutes vs. days for rare disease diagnosis</span></li>
+            <li><strong>Mental Health Screening</strong><span class="sub">Conversational AI tools achieve 80%+ accuracy in PHQ-9 depression screening via voice analysis</span></li>
+          </ul>
+        </div>
+      </div>
+      <div class="stripe"><div class="stripe-r"></div><div class="stripe-d"></div><div class="stripe-t"></div></div>
+      <div class="logo-bar">
+        <span class="logo-adelphi"><span class="dot">●</span> adelphi</span>
+        <span class="logo-phiyond"><span class="dot">◆</span> phiyond</span>
+        <span class="logo-seek">SEEK DEVELOPMENT</span>
+      </div>
+      <div class="page-num">6</div>
+    </div>
+
+    <!-- ════════════════════════════════════
+         SLIDE 7 — SECTION DIVIDER
+    ════════════════════════════════════ -->
+    <div class="slide slide-section" data-index="6">
+      <div class="sec-label">Part Two · Applications &amp; Outlook</div>
+      <div class="sec-bar"></div>
+      <div class="sec-title">Drug Discovery &amp;<br><span class="teal">Operational Excellence</span></div>
+      <div class="sec-desc">AI is restructuring the economics of pharmaceutical R&amp;D and healthcare operations alike — compressing timelines, reducing costs, and enabling new treatment modalities that were previously impossible to discover.</div>
+      <div class="sec-num">02</div>
+      <div class="stripe"><div class="stripe-r"></div><div class="stripe-d"></div><div class="stripe-t"></div></div>
+      <div class="logo-bar">
+        <span class="logo-adelphi"><span class="dot">●</span> adelphi</span>
+        <span class="logo-phiyond"><span class="dot">◆</span> phiyond</span>
+        <span class="logo-seek">SEEK DEVELOPMENT</span>
+      </div>
+      <div class="page-num">7</div>
+    </div>
+
+    <!-- ════════════════════════════════════
+         SLIDE 8 — TWO COL: Drug + Operations
+    ════════════════════════════════════ -->
+    <div class="slide slide-two-col" data-index="7">
+      <div class="s-label">Pharmaceutical &amp; Operations</div>
+      <div class="s-title">Drug Discovery &amp; Healthcare Operations</div>
+      <div class="col-divider-line"></div>
+      <div class="two-col-body">
+        <div>
+          <div class="col-header">AI-Accelerated Drug Discovery</div>
+          <ul class="bullet-list">
+            <li><strong>AlphaFold 3</strong><span class="sub">DeepMind's protein structure prediction now covers DNA, RNA &amp; small molecules — transforming target identification</span></li>
+            <li><strong>Insilico Medicine</strong><span class="sub">First fully AI-designed drug candidate (INS018_055) reached Phase II clinical trials for IPF in 2024</span></li>
+            <li><strong>Virtual Screening</strong><span class="sub">AI reduces compound screening from 10M+ candidates to ~50 high-probability leads, cutting costs by 70%</span></li>
+            <li><strong>Clinical Trial Optimisation</strong><span class="sub">AI-matched patient cohorts reduce trial recruitment timelines by 40% and drop-out rates by 25%</span></li>
+            <li><strong>Personalised Oncology</strong><span class="sub">AI tumour genomics models tailor chemotherapy regimens to individual mutation profiles</span></li>
+          </ul>
+        </div>
+        <div class="col-sep"></div>
+        <div>
+          <div class="col-header">Operational &amp; Administrative AI</div>
+          <ul class="bullet-list">
+            <li><strong>Revenue Cycle Management</strong><span class="sub">AI denial prediction &amp; auto-coding reduces claim rejection rates by 35%; frees billing staff for complex cases</span></li>
+            <li><strong>Supply Chain &amp; Inventory</strong><span class="sub">Demand forecasting AI reduces pharmaceutical waste by 20% and stockout incidents by 45%</span></li>
+            <li><strong>Bed Management</strong><span class="sub">Predictive discharge planning improves bed utilisation by 12–18% in large health systems</span></li>
+            <li><strong>Staffing Optimisation</strong><span class="sub">ML workforce scheduling reduces overtime costs by 15% while maintaining nurse-to-patient ratios</span></li>
+            <li><strong>Prior Authorisation</strong><span class="sub">AI automation reduces PA processing time from 14 days to under 2 hours for common procedures</span></li>
+          </ul>
+        </div>
+      </div>
+      <div class="stripe"><div class="stripe-r"></div><div class="stripe-d"></div><div class="stripe-t"></div></div>
+      <div class="logo-bar">
+        <span class="logo-adelphi"><span class="dot">●</span> adelphi</span>
+        <span class="logo-phiyond"><span class="dot">◆</span> phiyond</span>
+        <span class="logo-seek">SEEK DEVELOPMENT</span>
+      </div>
+      <div class="page-num">8</div>
+    </div>
+
+    <!-- ════════════════════════════════════
+         SLIDE 9 — PROCESS / IMPLEMENTATION
+    ════════════════════════════════════ -->
+    <div class="slide slide-process" data-index="8">
+      <div class="s-label">AI Adoption Framework</div>
+      <div class="s-title">Implementing AI in Healthcare: A 4-Stage Pathway</div>
+      <div class="divider-line"></div>
+      <div class="process-row">
+        <div class="process-step">
+          <div class="process-circle">1</div>
+          <div class="process-step-title">Readiness &amp; Assessment</div>
+          <div class="process-step-desc">Data audit, infrastructure review, governance baseline</div>
+        </div>
+        <div class="process-arrow">→</div>
+        <div class="process-step">
+          <div class="process-circle">2</div>
+          <div class="process-step-title">Pilot &amp; Validation</div>
+          <div class="process-step-desc">Controlled deployment, clinical validation &amp; bias testing</div>
+        </div>
+        <div class="process-arrow">→</div>
+        <div class="process-step">
+          <div class="process-circle">3</div>
+          <div class="process-step-title">Scale &amp; Integration</div>
+          <div class="process-step-desc">EHR integration, workflow embedding &amp; change management</div>
+        </div>
+        <div class="process-arrow">→</div>
+        <div class="process-step">
+          <div class="process-circle">4</div>
+          <div class="process-step-title">Monitor &amp; Optimise</div>
+          <div class="process-step-desc">Continuous model monitoring, retraining &amp; outcome tracking</div>
+        </div>
+      </div>
+      <div class="process-details">
+        <div class="process-detail-card">
+          <div class="card-title">Stage 1 Focus Areas</div>
+          <div class="card-body">HIPAA/GDPR alignment · Data quality scoring · Use-case prioritisation by ROI · Stakeholder mapping</div>
+        </div>
+        <div class="process-detail-card">
+          <div class="card-title">Stage 2 Focus Areas</div>
+          <div class="card-body">Prospective clinical trials · IRB approval · Clinician feedback loops · Vendor evaluation criteria</div>
+        </div>
+        <div class="process-detail-card">
+          <div class="card-title">Stage 3 Focus Areas</div>
+          <div class="card-body">HL7 FHIR API integration · Staff training programmes · Interoperability testing · ROI measurement framework</div>
+        </div>
+        <div class="process-detail-card">
+          <div class="card-title">Stage 4 Focus Areas</div>
+          <div class="card-body">Model drift detection · Equity audits · Clinical outcome KPIs · Regulatory reporting &amp; re-certification</div>
+        </div>
+      </div>
+      <div class="stripe"><div class="stripe-r"></div><div class="stripe-d"></div><div class="stripe-t"></div></div>
+      <div class="logo-bar">
+        <span class="logo-adelphi"><span class="dot">●</span> adelphi</span>
+        <span class="logo-phiyond"><span class="dot">◆</span> phiyond</span>
+        <span class="logo-seek">SEEK DEVELOPMENT</span>
+      </div>
+      <div class="page-num">9</div>
+    </div>
+
+    <!-- ════════════════════════════════════
+         SLIDE 10 — CASE STUDY
+    ════════════════════════════════════ -->
+    <div class="slide slide-case" data-index="9">
+      <div class="s-label">Case Study</div>
+      <div class="s-title">Leading Implementations: <span class="accent-red">Lessons Learned</span></div>
+      <div class="divider-line"></div>
+      <div class="case-grid">
+        <div class="case-cell">
+          <div class="case-cell-title">Mayo Clinic: AI-Assisted ECG Analysis</div>
+          <ul>
+            <li>Detected asymptomatic left ventricular dysfunction via standard ECG with 93% AUC — invisible to human readers</li>
+            <li>Early detection led to treatment before heart failure onset in 34% of flagged patients</li>
+            <li>Deployed at scale across 1.2M patients; now integrated into routine care pathways</li>
+            <li>Key learning: Clinical champion buy-in and workflow integration are more critical than algorithm performance</li>
+          </ul>
+        </div>
+        <div class="case-cell">
+          <div class="case-cell-title">NHS UK: AI Breast Cancer Screening</div>
+          <ul>
+            <li>Google Health AI matched or exceeded radiologist accuracy in breast cancer detection across 29,000 mammograms</li>
+            <li>Reduced false positives by 5.7% and false negatives by 9.4% vs. standard double reading</li>
+            <li>Currently in expanded NHS England pilot across 30 sites — results expected Q3 2025</li>
+            <li>Key learning: Diverse training data is essential; AI trained on single demographics shows 12% accuracy drop in other groups</li>
+          </ul>
+        </div>
+        <div class="case-cell">
+          <div class="case-cell-title">IBM Watson for Oncology: Cautionary Lessons</div>
+          <ul>
+            <li>Watson for Oncology recommended "unsafe and incorrect" treatments in 5 of 7 cancer types per internal Sloan Kettering audit</li>
+            <li>Training data was too limited, non-diverse &amp; derived from synthetic cases rather than real patient outcomes</li>
+            <li>Project discontinued in 2022 — highlights risks of over-promising AI in high-stakes clinical settings</li>
+            <li>Key learning: Rigorous real-world validation must precede clinical deployment — no exceptions</li>
+          </ul>
+        </div>
+        <div class="case-cell">
+          <div class="case-cell-title">Insilico Medicine: AI Drug Discovery</div>
+          <ul>
+            <li>Identified novel fibrosis drug target &amp; designed candidate molecule in 18 months vs. typical 4–5 years</li>
+            <li>INS018_055 passed Phase I safety trials in 2023 and entered Phase II in 2024 for idiopathic pulmonary fibrosis</li>
+            <li>Total cost to Phase II: ~$2.6M vs. industry average of $300M+ for traditional discovery</li>
+            <li>Key learning: AI excels at hypothesis generation; human expertise remains essential for mechanistic interpretation</li>
+          </ul>
+        </div>
+      </div>
+      <div class="stripe"><div class="stripe-r"></div><div class="stripe-d"></div><div class="stripe-t"></div></div>
+      <div class="logo-bar">
+        <span class="logo-adelphi"><span class="dot">●</span> adelphi</span>
+        <span class="logo-phiyond"><span class="dot">◆</span> phiyond</span>
+        <span class="logo-seek">SEEK DEVELOPMENT</span>
+      </div>
+      <div class="page-num">10</div>
+    </div>
+
+    <!-- ════════════════════════════════════
+         SLIDE 11 — RISKS, ETHICS & RECOMMENDATIONS
+    ════════════════════════════════════ -->
+    <div class="slide slide-content" data-index="10">
+      <div class="s-label">Strategic Outlook</div>
+      <div class="s-title">Risks, Ethics &amp; <span class="accent-teal">adelphi Recommendations</span></div>
+      <div class="divider-line"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:32px;margin-top:4px;">
+        <div>
+          <div style="font-family:var(--font-body);font-size:12px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:10px;">Critical Risk Areas</div>
+          <ul class="bullet-list">
+            <li><strong>Algorithmic Bias &amp; Health Equity</strong><span class="sub">AI trained on non-diverse datasets systematically underperforms for minority, elderly &amp; low-income populations</span></li>
+            <li><strong>Regulatory Lag</strong><span class="sub">FDA &amp; EMA frameworks still lag the pace of AI capability development — creating compliance uncertainty</span></li>
+            <li><strong>Data Privacy &amp; Security</strong><span class="sub">Healthcare data breaches rose 93% in 2024; AI systems expand the attack surface considerably</span></li>
+            <li><strong>Clinician Automation Bias</strong><span class="sub">Over-reliance on AI recommendations can erode clinical judgment — particularly among trainees</span></li>
+            <li><strong>Liability &amp; Accountability Gaps</strong><span class="sub">Who is responsible when AI-assisted diagnosis leads to patient harm? Legal frameworks remain unresolved</span></li>
+          </ul>
+        </div>
+        <div>
+          <div style="font-family:var(--font-body);font-size:12px;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:10px;">adelphi Strategic Recommendations</div>
+          <ul class="bullet-list">
+            <li><strong>Establish an AI Clinical Governance Board</strong><span class="sub">Cross-functional oversight including clinicians, ethicists, data scientists &amp; patient representatives</span></li>
+            <li><strong>Mandate Prospective Clinical Validation</strong><span class="sub">All AI tools must demonstrate real-world performance across diverse patient populations before deployment</span></li>
+            <li><strong>Invest in AI Literacy for Clinical Staff</strong><span class="sub">Target 100% of clinical staff completing AI fundamentals training by end of 2025</span></li>
+            <li><strong>Adopt an "AI Augments, Clinician Decides" Policy</strong><span class="sub">Preserve human decision authority in all diagnostic, treatment &amp; triage workflows</span></li>
+            <li><strong>Prioritise Interoperability &amp; Open Standards</strong><span class="sub">FHIR-compliant, vendor-neutral architectures prevent costly lock-in and enable data portability</span></li>
+          </ul>
+        </div>
+      </div>
+      <div class="stripe"><div class="stripe-r"></div><div class="stripe-d"></div><div class="stripe-t"></div></div>
+      <div class="logo-bar">
+        <span class="logo-adelphi"><span class="dot">●</span> adelphi</span>
+        <span class="logo-phiyond"><span class="dot">◆</span> phiyond</span>
+        <span class="logo-seek">SEEK DEVELOPMENT</span>
+      </div>
+      <div class="page-num">11</div>
+    </div>
+
+    <!-- ════════════════════════════════════
+         SLIDE 12 — CONTACT / CLOSING
+    ════════════════════════════════════ -->
+    <div class="slide slide-contact" data-index="11">
+      <div class="s-label">Get In Touch</div>
+      <div class="s-title">Contact Our Healthcare Practice</div>
+      <div class="divider-line"></div>
+      <div class="contact-cards">
+        <div class="contact-card">
+          <div class="cc-company">adelphi — Healthcare Lead</div>
+          <div class="cc-name">Dr. Sarah Hoffmann</div>
+          <div class="cc-role">Partner, Digital Health &amp; AI Strategy</div>
+          <div class="cc-detail">
+            Alte Jakobstr. 85/86<br>
+            10179 Berlin, Germany<br>
+            +49 30 8900 5000<br>
+            <a href="#">s.hoffmann@adelphi.de</a>
+          </div>
+        </div>
+        <div class="contact-card">
+          <div class="cc-company">adelphi — Life Sciences</div>
+          <div class="cc-name">James Whitfield</div>
+          <div class="cc-role">Principal, Pharma &amp; Drug Innovation</div>
+          <div class="cc-detail">
+            22 Chancery Lane<br>
+            London WC2A 1LS, UK<br>
+            +44 20 7831 9400<br>
+            <a href="#">j.whitfield@adelphi.de</a>
+          </div>
+        </div>
+        <div class="contact-card">
+          <div class="cc-company">phiyond</div>
+          <div class="cc-name">Anna Chen</div>
+          <div class="cc-role">Director, AI &amp; Digital Transformation</div>
+          <div class="cc-detail">
+            One Embarcadero Center<br>
+            San Francisco, CA 94111<br>
+            +1 415 200 4400<br>
+            <a href="#">a.chen@phiyond.com</a>
+          </div>
+        </div>
+        <div class="contact-card">
+          <div class="cc-company">SEEK Development</div>
+          <div class="cc-name">Marcus Osei</div>
+          <div class="cc-role">Head of Global Health Innovation</div>
+          <div class="cc-detail">
+            Friedrichstr. 140<br>
+            10117 Berlin, Germany<br>
+            +49 30 2000 8800<br>
+            <a href="#">m.osei@seek-development.org</a>
+          </div>
+        </div>
+      </div>
+      <div class="contact-bottom">
+        <div class="tagline">Shaping policy. <span>Transforming health.</span> Delivering impact.</div>
+        <div class="web">www.adelphi.de</div>
+      </div>
+      <div class="stripe"><div class="stripe-r"></div><div class="stripe-d"></div><div class="stripe-t"></div></div>
+      <div class="logo-bar">
+        <span class="logo-adelphi"><span class="dot">●</span> adelphi</span>
+        <span class="logo-phiyond"><span class="dot">◆</span> phiyond</span>
+        <span class="logo-seek">SEEK DEVELOPMENT</span>
+      </div>
+      <div class="page-num">12</div>
+    </div>
+
+    <!-- Click Zones -->
+    <div class="click-zone" id="zone-prev"></div>
+    <div class="click-zone" id="zone-next"></div>
+  </div><!-- /slides-container -->
+
+  <!-- Controls -->
+  <div id="controls">
+    <button id="btn-prev" title="Previous">&#8592;</button>
+    <span id="slide-counter">1 / 12</span>
+    <button id="btn-next" title="Next">&#8594;</button>
+    <button id="btn-overview" title="Slide Overview" style="font-size:14px;margin-left:4px;">&#9783;</button>
+  </div>
+
+  <button id="fullscreen-btn" title="Toggle Fullscreen">⛶</button>
+
+  <!-- Overview -->
+  <div id="overview" class="hidden">
+    <div id="overview-close-hint">Press ESC to close</div>
+    <h2>Slide Overview</h2>
+    <div id="overview-grid"></div>
+  </div>
+</div><!-- /presentation -->
+
+<script>
+(function() {
+  const TOTAL = 12;
+  let current = 0;
+  let overviewOpen = false;
+
+  const slides = document.querySelectorAll('.slide');
+  const counter = document.getElementById('slide-counter');
+  const overview = document.getElementById('overview');
+  const overviewGrid = document.getElementById('overview-grid');
+  const container = document.getElementById('slides-container');
+
+  // ── Scale slides to fit viewport ──
+  function scaleSlides() {
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const scaleX = vw / 1280;
+    const scaleY = vh / 720;
+    const scale = Math.min(scaleX, scaleY) * 0.96;
+    container.style.transform = `scale(${scale})`;
+  }
+  scaleSlides();
+  window.addEventListener('resize', scaleSlides);
+
+  // ── Go to slide ──
+  function goTo(n, skipHash) {
+    n = Math.max(0, Math.min(TOTAL - 1, n));
+    slides[current].classList.remove('active');
+    current = n;
+    slides[current].classList.add('active');
+    counter.textContent = `${current + 1} / ${TOTAL}`;
+    if (!skipHash) {
+      try { history.replaceState(null, '', `#slide-${current + 1}`); } catch(e) {}
+    }
+    updateThumbActive();
+  }
+
+  function next() { goTo(current + 1); }
+  function prev() { goTo(current - 1); }
+
+  // ── Read hash on load ──
+  const hash = window.location.hash;
+  if (hash && hash.startsWith('#slide-')) {
+    const n = parseInt(hash.replace('#slide-', ''), 10);
+    if (!isNaN(n)) goTo(n - 1, true);
+  }
+
+  // ── Keyboard ──
+  document.addEventListener('keydown', e => {
+    if (overviewOpen) {
+      if (e.key === 'Escape') closeOverview();
+      return;
+    }
+    switch(e.key) {
+      case 'ArrowRight': case ' ': e.preventDefault(); next(); break;
+      case 'ArrowLeft': case 'Backspace': e.preventDefault(); prev(); break;
+      case 'Escape': openOverview(); break;
+    }
+  });
+
+  // ── Buttons ──
+  document.getElementById('btn-next').addEventListener('click', next);
+  document.getElementById('btn-prev').addEventListener('click', prev);
+  document.getElementById('btn-overview').addEventListener('click', toggleOverview);
+  document.getElementById('zone-next').addEventListener('click', next);
+  document.getElementById('zone-prev').addEventListener('click', prev);
+
+  // ── Touch swipe ──
+  let touchStartX = 0;
+  container.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; }, {passive:true});
+  container.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    if (Math.abs(dx) > 50) { dx < 0 ? next() : prev(); }
+  }, {passive:true});
+
+  // ── Fullscreen ──
+  document.getElementById('fullscreen-btn').addEventListener('click', () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {});
+    } else {
+      document.exitFullscreen().catch(() => {});
+    }
+  });
+
+  // ── Overview ──
+  function buildOverview() {
+    overviewGrid.innerHTML = '';
+    const slideLabels = [
+      'Title Slide','Agenda','Section: Landscape','AI Landscape & Drivers',
+      'Key Statistics 2025','Clinical Diagnostics & AI','Section: Drug Discovery',
+      'Drug Discovery & Operations','AI Implementation Pathway','Case Studies',
+      'Risks & Recommendations','Contact & Closing'
+    ];
+    slides.forEach((slide, i) => {
+      const thumb = document.createElement('div');
+      thumb.className = 'thumb' + (i === current ? ' active-thumb' : '');
+      thumb.dataset.index = i;
+
+      // Clone-based thumbnail
+      const preview = document.createElement('div');
+      preview.className = 'thumb-preview';
+      const clone = slide.cloneNode(true);
+      clone.className = 'thumb-clone';
+      clone.style.opacity = '1';
+      clone.style.pointerEvents = 'none';
+      // scale 1280×720 down to fill the thumb width
+      const thumbW = Math.floor((window.innerWidth - 80 - 48) / 4);
+      const scale = thumbW / 1280;
+      clone.style.transform = `scale(${scale})`;
+      preview.style.height = Math.round(720 * scale) + 'px';
+      preview.appendChild(clone);
+
+      const label = document.createElement('div');
+      label.className = 'thumb-label';
+      label.textContent = `${i+1}. ${slideLabels[i]}`;
+
+      thumb.appendChild(preview);
+      thumb.appendChild(label);
+      thumb.addEventListener('click', () => {
+        goTo(i);
+        closeOverview();
+      });
+      overviewGrid.appendChild(thumb);
+    });
+  }
+
+  function updateThumbActive() {
+    const thumbs = document.querySelectorAll('.thumb');
+    if (!thumbs.length) return;
+    thumbs.forEach((t, i) => {
+      t.classList.toggle('active-thumb', i === current);
+    });
+  }
+
+  function openOverview() {
+    overviewOpen = true;
+    buildOverview();
+    overview.classList.remove('hidden');
+  }
+
+  function closeOverview() {
+    overviewOpen = false;
+    overview.classList.add('hidden');
+  }
+
+  function toggleOverview() {
+    overviewOpen ? closeOverview() : openOverview();
+  }
+
+  // init counter
+  counter.textContent = `${current + 1} / ${TOTAL}`;
+})();
+</script>
+</body>
+</html>
